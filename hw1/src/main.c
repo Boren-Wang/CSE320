@@ -18,6 +18,11 @@
 
 int main(int argc, char **argv)
 {
+    // for(int i=1; i<argc; i++){
+    //     char *c =  argv[i];
+    //     printf("%s\n", c);
+    // }
+
     int ret;
     if(validargs(argc, argv))
         USAGE(*argv, EXIT_FAILURE);
@@ -26,6 +31,7 @@ int main(int argc, char **argv)
         USAGE(*argv, EXIT_SUCCESS);
 
     return EXIT_SUCCESS;
+
 }
 
 /*

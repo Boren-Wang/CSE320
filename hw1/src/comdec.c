@@ -1,6 +1,7 @@
 #include "const.h"
 #include "sequitur.h"
 #include "debug.h"
+#include <stdlib.h>
 
 #ifdef _STRING_H
 #error "Do not #include <string.h>. You will get a ZERO."
@@ -91,6 +92,49 @@ int decompress(FILE *in, FILE *out) {
  */
 int validargs(int argc, char **argv)
 {
-    // To be implemented.
+    if(argc==1){
+        return -1;
+    }
+
+    if(**(argv+1)=='-' && *(*(argv+1)+1)=='h'){
+        global_options =  global_options | 1;
+        return 0;
+    }else if(**(argv+1)=='-' && *(*(argv+1)+1)=='c'){
+        if(argc==2){
+            return 0;
+        }else if(**(argv+2)=='-' && *(*(argv+2)+1)=='b'){
+            if(argc>3){
+                char* cp = *(argv+3);
+                int i=0;
+                while(*cp!='\0'){
+                    char c = *(cp+i);
+                    if(c<'0' || c>'9'){
+                        return -1;
+                    }
+                    i++;
+                }
+
+                // i = atoi(*(argv+3));
+                // if(i>=1 && i<=1024){
+                //     return 0;
+                // } else {
+                //     return -1;
+                // }
+                return 0;
+            }else{
+                return -1;
+            }
+        }
+
+    }else if(**(argv+1)=='-' && *(*(argv+1)+1)=='d'){
+        if(argc==2){
+            return 0;
+        }else{
+            return -1;
+        }
+    }else{
+        return -1;
+    }
+
     return -1;
 }
