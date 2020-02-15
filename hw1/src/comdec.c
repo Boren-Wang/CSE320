@@ -92,42 +92,49 @@ int decompress(FILE *in, FILE *out) {
  */
 int validargs(int argc, char **argv)
 {
-    if(argc==1){
+    if(argc==1){ // -s
         return -1;
     }
 
-    if(**(argv+1)=='-' && *(*(argv+1)+1)=='h'){
-        global_options =  global_options | 1;
+    if(**(argv+1)=='-' && *(*(argv+1)+1)=='h'){ // s -h
+        global_options =  0x1;
         return 0;
-    }else if(**(argv+1)=='-' && *(*(argv+1)+1)=='c'){
-        if(argc==2){
+    }else if(**(argv+1)=='-' && *(*(argv+1)+1)=='c'){ // s -c
+        if(argc==2){ // -c
+            global_options = 0x04000002;
             return 0;
-        }else if(**(argv+2)=='-' && *(*(argv+2)+1)=='b'){
-            if(argc>3){
+        }else if(**(argv+2)=='-' && *(*(argv+2)+1)=='b'){ // s -c -b
+            // if(argc>3){
+            if(argc==4){
                 char* cp = *(argv+3);
-                int i=0;
+                int size = 0;
                 while(*cp!='\0'){
-                    char c = *(cp+i);
+                    char c = *cp;
                     if(c<'0' || c>'9'){
                         return -1;
+                    } else {
+                        size*=10;
+                        size+=(*cp-'0');
                     }
-                    i++;
+                    cp++;
                 }
-
-                // i = atoi(*(argv+3));
-                // if(i>=1 && i<=1024){
-                //     return 0;
-                // } else {
-                //     return -1;
-                // }
-                return 0;
+                if(size>-1 && size<1025){
+                    size = size<<4;
+                    global_options = size + 0x2;
+                    return 0;
+                } else {
+                    return -1;
+                }
             }else{
                 return -1;
             }
+        }else{
+            return -1;
         }
 
     }else if(**(argv+1)=='-' && *(*(argv+1)+1)=='d'){
         if(argc==2){
+            global_options= 0x00000004;
             return 0;
         }else{
             return -1;
@@ -135,6 +142,4 @@ int validargs(int argc, char **argv)
     }else{
         return -1;
     }
-
-    return -1;
 }

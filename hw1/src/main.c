@@ -19,14 +19,14 @@
 int main(int argc, char **argv)
 {
     // for(int i=1; i<argc; i++){
-    //     char *c =  argv[i];
-    //     printf("%s\n", c);
+    //     char *s =  argv[i];
+    //     printf("%s\n", s);
     // }
-
+    // printf("%zu\n", sizeof(int));
     int ret;
     if(validargs(argc, argv))
         USAGE(*argv, EXIT_FAILURE);
-    debug("Options: 0x%x", global_options);
+    debug("Options: 0x%x", global_options); // ?
     if(global_options & 1)
         USAGE(*argv, EXIT_SUCCESS);
 

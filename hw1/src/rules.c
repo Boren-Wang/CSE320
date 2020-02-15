@@ -51,6 +51,9 @@
  */
 void init_rules(void) {
     // To be implemented.
+    main_rule = NULL;
+    free(rule_map);
+    // rule_map = NULL;
 }
 
 /**
@@ -70,7 +73,13 @@ void init_rules(void) {
  */
 SYMBOL *new_rule(int v) {
     // To be implemented.
-    return NULL;
+    if(IS_NONTERMINAL(v)){
+        // ??????????
+    }
+    SYMBOL *new_rule = new_symbol(v, new_rule);
+    new_rule->next = new_rule;
+    new_rule->prev = new_rule;
+    return new_rule;
 }
 
 /**
@@ -86,6 +95,14 @@ SYMBOL *new_rule(int v) {
  */
 void add_rule(SYMBOL *rule) {
     // To be implemented.
+    if(main_rule==NULL){
+        main_rule  = rule;
+        main_rule->nextr = main_rule;
+        main_rule->prevr = main_rule;
+    } else {
+        main_rule->prevr->nextr = rule;
+        rule->next  =  main_rule;
+    }
 }
 
 /**
@@ -101,6 +118,11 @@ void add_rule(SYMBOL *rule) {
  */
 void delete_rule(SYMBOL *rule) {
     // To be implemented.
+    rule->prevr->nextr = rule->nextr;
+    rule->nextr->prevr = rule->prevr;
+    if(rule->refcnt==0){
+        recycle_symbol(rule);
+    }
 }
 
 /**
@@ -111,6 +133,7 @@ void delete_rule(SYMBOL *rule) {
  */
 SYMBOL *ref_rule(SYMBOL *rule) {
     // To be implemented.
+    rule->refcnt++;
     return NULL;
 }
 
@@ -124,4 +147,5 @@ SYMBOL *ref_rule(SYMBOL *rule) {
  */
 void unref_rule(SYMBOL *rule) {
     // To be implemented.
+    rule->refcnt--;
 }

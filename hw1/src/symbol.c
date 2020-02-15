@@ -13,6 +13,8 @@
  */
 int next_nonterminal_value = FIRST_NONTERMINAL;
 
+SYMBOL* recycled_symbols = NULL;
+
 /**
  * Initialize the symbols module.
  * Frees all symbols, setting num_symbols to 0, and resets next_nonterminal_value
@@ -20,6 +22,10 @@ int next_nonterminal_value = FIRST_NONTERMINAL;
  */
 void init_symbols(void) {
     // To be implemented.
+    free(symbol_storage);
+    // symbol_storage = NULL;
+    num_symbols = 0;
+    next_nonterminal_value = FIRST_NONTERMINAL;
 }
 
 /**
@@ -47,7 +53,23 @@ void init_symbols(void) {
  */
 SYMBOL *new_symbol(int value, SYMBOL *rule) {
     // To be implemented.
-    return NULL;
+    if(recycled_symbols==NULL){
+        num_symbols++;
+        SYMBOL *new_symbol = symbol_storage+num_symbols-1;
+        new_symbol->value = value;
+
+        new_symbol->rule = rule;
+        if(rule!=NULL){
+            ref_rul(rule);
+        }
+
+        return new_symbol;
+    } else {
+        SYMBOL *new_symbol = recycled_symbols;
+        recycled_symbols = recycled_symbols->next;
+        new_symbol->next = NULL;
+        return  new_symbol;
+    }
 }
 
 /**
@@ -63,4 +85,10 @@ SYMBOL *new_symbol(int value, SYMBOL *rule) {
  */
 void recycle_symbol(SYMBOL *s) {
     // To be implemented.
+    if(recycled_symbols==NULL){
+        recycled_symbols == s;
+    } else {
+        s->next = recycled_symbols;
+        recycled_symbols = s;
+    }
 }

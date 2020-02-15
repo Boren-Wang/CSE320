@@ -96,7 +96,7 @@ extern int num_symbols;
  * which is a nonterminal symbol that represents the head of the rule.
  * The sentinel is linked between the first and last symbol in the body of the
  * rule, resulting in the following (doubly linked) configuration:
- * 
+ *
  *    H <-> B1 <-> B2 <-> ... <-> Bn
  *    ^                           ^
  *    |                           |
