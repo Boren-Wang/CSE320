@@ -73,8 +73,8 @@ void init_rules(void) {
  */
 SYMBOL *new_rule(int v) {
     // To be implemented.
-    if(IS_NONTERMINAL(v)){
-        // ??????????
+    if(v<FIRST_NONTERMINAL){
+        printf("The head of a rule needs to be a nonterminal symbol!");
     }
     SYMBOL *new_rule = new_symbol(v, new_rule);
     new_rule->next = new_rule;
@@ -148,4 +148,9 @@ SYMBOL *ref_rule(SYMBOL *rule) {
 void unref_rule(SYMBOL *rule) {
     // To be implemented.
     rule->refcnt--;
+}
+
+void add_symbol(SYMBOL *rule, SYMBOL *symbol){
+    rule->prev->next = symbol;
+    rule->prev = symbol;
 }

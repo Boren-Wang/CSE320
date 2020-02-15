@@ -1,6 +1,7 @@
 #include "const.h"
 #include "sequitur.h"
 #include "debug.h"
+#include "myheader.h"
 #include <stdlib.h>
 
 #ifdef _STRING_H
@@ -59,6 +60,20 @@ int compress(FILE *in, FILE *out, int bsize) {
     return EOF;
 }
 
+void recursive_print(SYMBOL *head, FILE *out, int* countp){
+    if(head==NULL){
+        return;
+    }
+    if(IS_TERMINAL(head)){
+        fputc((char)head->value, out);
+        *countp += 1;
+        recursive_print(head->next, out, countp);
+    } else {
+        recursive_print(rule_map[head->value], out, countp);
+        recursive_print(head->next, out, countp);
+    }
+}
+
 /**
  * Main decompression function.
  * Reads a compressed data transmission from an input stream, expands it,
@@ -71,6 +86,31 @@ int compress(FILE *in, FILE *out, int bsize) {
  */
 int decompress(FILE *in, FILE *out) {
     // To be implemented.
+    init_symbols();
+    init_rules();
+
+    char c = fgetc(in);
+    printf("%c\n", c);
+
+    do{ // new transmission
+        c = fgetc(in);
+        if(c==0x83){ // new block
+            do{
+                c = fgetc(in);
+                SYMBOL* head= new_rule((int)c);
+                c = fgetc(in);
+                while(c!=85 && c!=84){
+                    add_symbol(head, new_symbol((int)c, NULL));
+                }
+                add_rule(head);
+            }while(c!=0x84);
+        }
+    }while(c!=0x82);
+
+    int count = 0;
+    recursive_print(main_rule, out, &count);
+    return count;
+
     return EOF;
 }
 
