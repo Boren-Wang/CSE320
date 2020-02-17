@@ -56,7 +56,7 @@ SYMBOL *main_rule;
 /*
  * Array, used during decompression, that maps symbol values to nonterminal symbols.
  */
-SYMBOL *rule_map[MAX_SYMBOLS];
+SYMBOL *rule_map[SYMBOL_VALUE_MAX];
 
 /*
  * Below this line are prototypes for functions that MUST occur in your program.
