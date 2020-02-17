@@ -14,6 +14,7 @@
  */
 void init_digram_hash(void) {
     // To be implemented.
+    free(digram_table);
 }
 
 /**
@@ -26,6 +27,34 @@ void init_digram_hash(void) {
  */
 SYMBOL *digram_get(int v1, int v2) {
     // To be implemented.
+    int hash = DIGRAM_HASH(v1, v2);
+    SYMBOL **start = digram_table + hash;
+    SYMBOL **end = digram_table + MAX_DIGRAMS - 1;
+
+    for(SYMBOL** index=start; index<=end; index++){
+        if(*index==NULL){
+            return NULL;
+        } else {
+            SYMBOL s1 = **index;
+            SYMBOL s2 = *(*index+1);
+            if(s1.value==v1 && s2.value==v2){
+                return *index;
+            }
+        }
+    }
+
+    for(SYMBOL** index=digram_table; index<=start-1; index++){
+        if(*index==NULL){
+            return NULL;
+        } else {
+            SYMBOL s1 = **index;
+            SYMBOL s2 = *(*index+1);
+            if(s1.value==v1 && s2.value==v2){
+                return *index;
+            }
+        }
+    }
+
     return NULL;
 }
 
@@ -51,7 +80,47 @@ SYMBOL *digram_get(int v1, int v2) {
  */
 int digram_delete(SYMBOL *digram) {
     // To be implemented.
-    return -1;
+    int v1 = digram -> value;
+    int v2 = (digram+1)->value;
+    int hash = DIGRAM_HASH(v1, v2);
+    SYMBOL **start = digram_table + hash;
+    SYMBOL **end = digram_table + MAX_DIGRAMS - 1;
+
+    for(SYMBOL** index=start; index<=end; index++){
+        // if(*index==NULL || (*index)==TOMBSTONE){
+        //     continue;
+        // } else {
+        //     SYMBOL s1 = **index;
+        //     SYMBOL s2 = *(*index+1);
+        //     if(s1.value==v1 && s2.value==v2){
+        //         (*index) = TOMBSTONE;
+        //         return 0;
+        //     }
+        // }
+        if(*index == digram){
+            (*index) = TOMBSTONE;
+            return 0;
+        }
+    }
+
+    for(SYMBOL** index=digram_table; index<=start-1; index++){
+        // if(*index==NULL || (*index)==TOMBSTONE){
+        //     *index = digram;
+        //     return 0;
+        // } else {
+        //     SYMBOL s1 = **index;
+        //     SYMBOL s2 = *(*index+1);
+        //     if(s1.value==v1 && s2.value==v2){
+        //         (*index) = TOMBSTONE;
+        //         return 0;
+        //     }
+        // }
+        if(*index == digram){
+            (*index) = TOMBSTONE;
+            return 0;
+        }
+    }
+    return -1; // The digram does not exist
 }
 
 /**
@@ -65,5 +134,36 @@ int digram_delete(SYMBOL *digram) {
  */
 int digram_put(SYMBOL *digram) {
     // To be implemented.
-    return -1;
+    int v1 = digram -> value;
+    int v2 = (digram+1)->value;
+    int hash = DIGRAM_HASH(v1, v2);
+    SYMBOL **start = digram_table + hash;
+    SYMBOL **end = digram_table + MAX_DIGRAMS - 1;
+
+    for(SYMBOL** index=start; index<=end; index++){
+        if(*index==NULL || (*index)==TOMBSTONE){
+            *index = digram;
+            return 0;
+        } else {
+            SYMBOL s1 = **index;
+            SYMBOL s2 = *(*index+1);
+            if(s1.value==v1 && s2.value==v2){ // The digram already exists
+                return 1;
+            }
+        }
+    }
+
+    for(SYMBOL** index=digram_table; index<=start-1; index++){
+        if(*index==NULL || (*index)==TOMBSTONE){
+            *index = digram;
+            return 0;
+        } else {
+            SYMBOL s1 = **index;
+            SYMBOL s2 = *(*index+1);
+            if(s1.value==v1 && s2.value==v2){
+                return 1;
+            }
+        }
+    }
+    return -1; // The hashtable is full
 }
