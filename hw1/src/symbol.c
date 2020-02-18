@@ -53,23 +53,24 @@ void init_symbols(void) {
  */
 SYMBOL *new_symbol(int value, SYMBOL *rule) {
     // To be implemented.
+    SYMBOL *new_symbol;
     if(recycled_symbols==NULL){
         num_symbols++;
-        SYMBOL *new_symbol = symbol_storage+num_symbols-1;
+        new_symbol = symbol_storage+num_symbols-1;
         new_symbol->value = value;
-
         new_symbol->rule = rule;
-        if(rule!=NULL){
-            ref_rul(rule);
-        }
-
-        return new_symbol;
     } else {
-        SYMBOL *new_symbol = recycled_symbols;
+        new_symbol = recycled_symbols;
         recycled_symbols = recycled_symbols->next;
         new_symbol->next = NULL;
-        return  new_symbol;
+        new_symbol->value = value;
+        new_symbol->rule = rule;
     }
+
+    if(rule!=NULL){
+            ref_rule(rule);
+    }
+    return new_symbol;
 }
 
 /**
@@ -86,9 +87,15 @@ SYMBOL *new_symbol(int value, SYMBOL *rule) {
 void recycle_symbol(SYMBOL *s) {
     // To be implemented.
     if(recycled_symbols==NULL){
-        recycled_symbols == s;
+        recycled_symbols = s;
     } else {
         s->next = recycled_symbols;
         recycled_symbols = s;
     }
+    recycled_symbols -> refcnt = 0;
+    recycled_symbols -> rule = NULL;
+    recycled_symbols -> next = NULL;
+    recycled_symbols -> prev = NULL;
+    recycled_symbols -> nextr = NULL;
+    recycled_symbols -> prevr = NULL;
 }

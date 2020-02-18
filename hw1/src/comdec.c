@@ -69,7 +69,7 @@ void recursive_print(SYMBOL *head, FILE *out, int* countp){
         *countp += 1;
         recursive_print(head->next, out, countp);
     } else {
-        recursive_print(rule_map[head->value], out, countp);
+        recursive_print(*(rule_map+(head->value)), out, countp);
         recursive_print(head->next, out, countp);
     }
 }
@@ -86,33 +86,101 @@ void recursive_print(SYMBOL *head, FILE *out, int* countp){
  */
 int decompress(FILE *in, FILE *out) {
     // To be implemented.
-    init_symbols();
-    init_rules();
-
+    int count = 0;
     char c = fgetc(in);
     printf("%c\n", c);
 
     do{ // new transmission
         c = fgetc(in);
         if(c==0x83){ // new block
+            init_symbols();
+            init_rules();
             do{
                 c = fgetc(in);
-                SYMBOL* head= new_rule((int)c);
+                int byte1 = (int)c;
+                int v = 0;
+                if((byte1 & 0xe0 >> 4) == 0x1100){ // two bytes
+                    int byte2 = (int)(fgetc(in));
+                    v = toUTF8((byte1<<4)+byte2, 2);
+                } else if((byte1 & 0xf0 >> 4) == 0x1110){ // three bytes
+                    int byte2 = (int)(fgetc(in));
+                    int byte3 = (int)(fgetc(in));
+                    v = toUTF8((byte1<<8)+(byte2<<4)+byte3, 3);
+                } else if((byte1 & 0xf0 >> 4) == 0x1111){ // four bytes
+                    int byte2 = (int)(fgetc(in));
+                    int byte3 = (int)(fgetc(in));
+                    int byte4 = (int)(fgetc(in));
+                    v = toUTF8((byte1<<12)+(byte2<<8)+(byte3<<4)+byte4, 4);
+                } // The first symbol of a rule must be a non terminal symbol
+                SYMBOL* head= new_rule(v);
                 c = fgetc(in);
-                while(c!=85 && c!=84){
-                    add_symbol(head, new_symbol((int)c, NULL));
+
+                while(c!=0x85 && c!=0x84){
+                    byte1 = (int)c;
+                    v = 0;
+                    if((byte1 & 0xe0 >> 4) == 0x1100){ // two bytes
+                        int byte2 = (int)(fgetc(in));
+                        v = toUTF8((byte1<<4)+byte2, 2);
+                    } else if((byte1 & 0xf0 >> 4) == 0x1110){ // three bytes
+                        int byte2 = (int)(fgetc(in));
+                        int byte3 = (int)(fgetc(in));
+                        v = toUTF8((byte1<<8)+(byte2<<4)+byte3, 3);
+                    } else if((byte1 & 0xf0 >> 4) == 0x1111){ // four bytes
+                        int byte2 = (int)(fgetc(in));
+                        int byte3 = (int)(fgetc(in));
+                        int byte4 = (int)(fgetc(in));
+                        v = toUTF8((byte1<<12)+(byte2<<8)+(byte3<<4)+byte4, 4);
+                    } else {
+                        v = byte1;
+                    }
+                    if(v>0x7f){ // if non terminal
+                        SYMBOL *rule = *(rule_map+v); // rule can be null
+                        add_symbol(head, new_symbol(v, rule));
+                    } else {
+                        add_symbol(head, new_symbol(v, NULL));
+                    }
+                    c = fgetc(in);
                 }
                 add_rule(head);
             }while(c!=0x84);
+            recursive_print(main_rule, out, &count);
+            fflush(out);
+        } else {
+            return EOF;
         }
     }while(c!=0x82);
-
-    int count = 0;
-    recursive_print(main_rule, out, &count);
     return count;
-
-    return EOF;
 }
+
+    int toUTF8(int bytes, int bytec){
+        // if(bytec == 1){
+        //     return bytes;
+        // } else
+        if(bytec==2){
+            int left = bytes & 0x1f00;
+            left = left >> 2;
+            int right = bytes & 0x003f;
+            return left + right;
+        } else if(bytec == 3){
+            int left = bytes & 0xf0000;
+            left = left >> 4;
+            int middle = bytes & 0x3f00;
+            middle = middle >> 2;
+            int right = bytes & 0x003f;
+            return left + middle + right;
+        } else if(bytec == 4){
+            int lleft = bytes & 0x7000000;
+            lleft = lleft >> 6;
+            int left = bytes & 0x3f0000;
+            left = left >> 4;
+            int right = bytes & 0x3f00;
+            right = right >> 2;
+            int rright = bytes & 0x3f;
+            return lleft + left + right + rright;
+        } else {
+            return -1; // error
+        }
+    }
 
 /**
  * @brief Validates command line arguments passed to the program.
