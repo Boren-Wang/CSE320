@@ -90,21 +90,30 @@ int toUTF8(int bytes, int bytec){
     }
 }
 
-void recursive_print(SYMBOL *head, FILE *out, int* countp){
+void recursive_print(SYMBOL *head, FILE *out, int* countp, SYMBOL *referenced){
     // printf("Recursion starts...");
-    if(head==NULL){
+    // printf("The value of the main symbol is %x\n", (main_rule->value) & 0xffffffff);
+    if(referenced!=NULL && head->value==referenced->value){
         return;
     }
     if(IS_TERMINAL(head)){
-        printf("The value of the terminal symbol is %x\n", (head->value) & 0xffffffff);
+        // printf("The value of the terminal symbol is %x\n", (head->value) & 0xffffffff);
         fputc((char)head->value, out);
         *countp += 1;
-        recursive_print(head->next, out, countp);
+        if(head->next==main_rule){
+            // printf("The value of the symbol is %x\n", (head->next->value) & 0xffffffff);
+            return;
+        }
+        recursive_print(head->next, out, countp, referenced);
     } else {
-        printf("The value of the non terminal symbol is %x\n", (head->value) & 0xffffffff);
-        printf("First body symbol's value is %x\n", ((*(rule_map+(head->value)))->next->value) & 0xffffffff);
-        recursive_print((*(rule_map+(head->value)))->next, out, countp);
-        recursive_print(head->next, out, countp);
+        // printf("The value of the non terminal symbol is %x\n", (head->value) & 0xffffffff);
+        // printf("First body symbol's value is %x\n", ((*(rule_map+(head->value)))->next->value) & 0xffffffff);
+        recursive_print((*(rule_map+(head->value)))->next, out, countp, *(rule_map+(head->value)));
+        if(head->next==main_rule){
+            printf("The value of the symbol is %x\n", (head->next->value) & 0xffffffff);
+            return;
+        }
+        recursive_print(head->next, out, countp, referenced);
     }
 }
 
@@ -117,12 +126,16 @@ void print_array(){
     // for(int i=0; i<num_symbols; i++){
     //     printf("%x\n", ((symbol_storage+i)->value) & 0xffffffff);
     // }
-    printf("%x\n", ((*(rule_map+0x100))->value) & 0xffffffff);
+    // printf("%x\n", ((*(rule_map+0x109))->value) & 0xffffffff);
     // printf("%x\n", ((*(rule_map+0x109))->value) & 0xffffffff);
     // printf("%x\n", ((*(rule_map+0x10a))->value) & 0xffffffff);
-    printf("%x\n", ((*(rule_map+0x100))->next->value) & 0xffffffff);
-    printf("%x\n", ((*(rule_map+0x100))->next->next->value) & 0xffffffff);
-
+    // printf("%x\n", ((*(rule_map+0x109))->next->value) & 0xffffffff);
+    // printf("%x\n", ((*(rule_map+0x109))->next->next->value) & 0xffffffff);
+    // SYMBOL* rule = main_rule;
+    // while(rule->nextr!=NULL){
+    //     printf("The rule is %x\n", (rule->value) & 0xffffffff);
+    //     rule = rule->nextr;
+    // }
 }
 
 /**
@@ -212,11 +225,18 @@ int decompress(FILE *in, FILE *out) {
                     }
                     // printf("The bytes is %x, the value of the new symbol is %x, and the count of bytes is %d\n", bytes, v & 0xffffffff, bytec);
                     if(v>0x7f){ // if non terminal
-                        printf("Adding non terminal symbol\n");
+                        // printf("Adding non terminal symbol\n");
                         SYMBOL *rule = *(rule_map+v); // rule can be null
+                        // if(rule!=NULL){
+                        //     printf("The rule's value is %x\n", (rule->value)&0xffffffff);
+                        // }
+                        // printf("New symbol value is %x\n", v&0xffffffff);
+                        // printf("Head is %x\n", (head->value) & 0xffffffff);
                         add_symbol(head, new_symbol(v, rule));
                     } else {
-                        printf("Adding terminal symbol\n");
+                        // printf("Adding terminal symbol\n");
+                        // printf("New symbol value is %x\n", v&0xffffffff);
+                        // printf("Head is %x\n", (head->value) & 0xffffffff);
                         add_symbol(head, new_symbol(v, NULL));
                     }
                     c = fgetc(in);
@@ -224,8 +244,8 @@ int decompress(FILE *in, FILE *out) {
                 add_rule(head);
             }while(c!=0x84);
             // printf("EOB-Printing...");
-            // recursive_print(main_rule, out, &count);
-            // fflush(out);
+            recursive_print(main_rule->next, out, &count, NULL);
+            fflush(out);
             print_array();
             c = fgetc(in);
         } else {

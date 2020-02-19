@@ -105,7 +105,9 @@ void add_rule(SYMBOL *rule) {
         main_rule->prevr = main_rule;
     } else {
         main_rule->prevr->nextr = rule;
-        rule->next  =  main_rule;
+        rule->nextr  =  main_rule;
+        rule->prevr = main_rule->prevr;
+        main_rule->prevr = rule;
     }
 }
 
@@ -156,5 +158,7 @@ void unref_rule(SYMBOL *rule) {
 
 void add_symbol(SYMBOL *rule, SYMBOL *symbol){
     rule->prev->next = symbol;
+    symbol->next = rule;
+    symbol->prev = rule->prev;
     rule->prev = symbol;
 }
