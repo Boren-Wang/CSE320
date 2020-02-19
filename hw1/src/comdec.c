@@ -110,7 +110,7 @@ void recursive_print(SYMBOL *head, FILE *out, int* countp, SYMBOL *referenced){
         // printf("First body symbol's value is %x\n", ((*(rule_map+(head->value)))->next->value) & 0xffffffff);
         recursive_print((*(rule_map+(head->value)))->next, out, countp, *(rule_map+(head->value)));
         if(head->next==main_rule){
-            printf("The value of the symbol is %x\n", (head->next->value) & 0xffffffff);
+            // printf("The value of the symbol is %x\n", (head->next->value) & 0xffffffff);
             return;
         }
         recursive_print(head->next, out, countp, referenced);
@@ -154,9 +154,9 @@ int decompress(FILE *in, FILE *out) {
     int c = fgetc(in);
     // printf("The first byte is %x\n", c & 0xff);
     // printf("The first byte is %d\n", c);
-
+    c = fgetc(in);
     do{ // new transmission
-        c = fgetc(in);
+        // c = fgetc(in);
         if(c==0x83){ // new block
             // printf("The first byte of a new block is %x\n", c & 0xff);
             init_symbols();
@@ -243,13 +243,15 @@ int decompress(FILE *in, FILE *out) {
                 }
                 add_rule(head);
             }while(c!=0x84);
-            // printf("EOB-Printing...");
+            // printf("EOB, The byte is %x\n", c & 0xffffffff);
             recursive_print(main_rule->next, out, &count, NULL);
             fflush(out);
-            print_array();
+            // print_array();
             c = fgetc(in);
+            // printf("EOB, The next byte is %x\n", c & 0xffffffff);
         } else {
-            printf("Enter EOF!");
+            printf("EOF!");
+            printf("The byte is %x\n", c & 0xffffffff);
             return EOF;
         }
     }while(c!=0x82);
