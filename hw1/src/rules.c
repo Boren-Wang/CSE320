@@ -52,8 +52,9 @@
 void init_rules(void) {
     // To be implemented.
     main_rule = NULL;
-    free(rule_map);
-    // rule_map = NULL;
+    for(int i=0; i<SYMBOL_VALUE_MAX; i++){
+        *(rule_map+i) = NULL;
+    }
 }
 
 /**
@@ -73,12 +74,15 @@ void init_rules(void) {
  */
 SYMBOL *new_rule(int v) {
     // To be implemented.
+    // printf("The value of the rule head is %x\n",  v&0xffffffff);
     if(v<FIRST_NONTERMINAL){
         printf("The head of a rule needs to be a nonterminal symbol!");
     }
-    SYMBOL *new_rule = new_symbol(v, new_rule);
+    SYMBOL *new_rule = new_symbol(v, NULL);
+    new_rule->rule = new_rule;
     new_rule->next = new_rule;
     new_rule->prev = new_rule;
+    *(rule_map+v) = new_rule;
     return new_rule;
 }
 
@@ -134,7 +138,7 @@ void delete_rule(SYMBOL *rule) {
 SYMBOL *ref_rule(SYMBOL *rule) {
     // To be implemented.
     rule->refcnt++;
-    return NULL;
+    return rule;
 }
 
 /**

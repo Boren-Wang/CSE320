@@ -14,7 +14,9 @@
  */
 void init_digram_hash(void) {
     // To be implemented.
-    free(digram_table);
+    for(int i=0; i<MAX_DIGRAMS; i++){
+        *(digram_table+i) = NULL;
+    }
 }
 
 /**

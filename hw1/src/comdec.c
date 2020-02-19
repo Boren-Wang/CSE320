@@ -60,18 +60,69 @@ int compress(FILE *in, FILE *out, int bsize) {
     return EOF;
 }
 
+int toUTF8(int bytes, int bytec){
+    // if(bytec == 1){
+    //     return bytes;
+    // } else
+    if(bytec==2){
+        int left = bytes & 0x1f00;
+        left = left >> 2;
+        int right = bytes & 0x003f;
+        return left + right;
+    } else if(bytec == 3){
+        int left = bytes & 0xf0000;
+        left = left >> 4;
+        int middle = bytes & 0x3f00;
+        middle = middle >> 2;
+        int right = bytes & 0x003f;
+        return left + middle + right;
+    } else if(bytec == 4){
+        int lleft = bytes & 0x7000000;
+        lleft = lleft >> 6;
+        int left = bytes & 0x3f0000;
+        left = left >> 4;
+        int right = bytes & 0x3f00;
+        right = right >> 2;
+        int rright = bytes & 0x3f;
+        return lleft + left + right + rright;
+    } else {
+        return -1; // error
+    }
+}
+
 void recursive_print(SYMBOL *head, FILE *out, int* countp){
+    // printf("Recursion starts...");
     if(head==NULL){
         return;
     }
     if(IS_TERMINAL(head)){
+        printf("The value of the terminal symbol is %x\n", (head->value) & 0xffffffff);
         fputc((char)head->value, out);
         *countp += 1;
         recursive_print(head->next, out, countp);
     } else {
-        recursive_print(*(rule_map+(head->value)), out, countp);
+        printf("The value of the non terminal symbol is %x\n", (head->value) & 0xffffffff);
+        printf("First body symbol's value is %x\n", ((*(rule_map+(head->value)))->next->value) & 0xffffffff);
+        recursive_print((*(rule_map+(head->value)))->next, out, countp);
         recursive_print(head->next, out, countp);
     }
+}
+
+void print_array(){
+    // for(int i=0; i<SYMBOL_VALUE_MAX; i++){
+    //     if(*(rule_map+i)!=NULL){
+    //         printf("%x\n", ((*(rule_map+i))->value)&0xffffffff);
+    //     }
+    // }
+    // for(int i=0; i<num_symbols; i++){
+    //     printf("%x\n", ((symbol_storage+i)->value) & 0xffffffff);
+    // }
+    printf("%x\n", ((*(rule_map+0x100))->value) & 0xffffffff);
+    // printf("%x\n", ((*(rule_map+0x109))->value) & 0xffffffff);
+    // printf("%x\n", ((*(rule_map+0x10a))->value) & 0xffffffff);
+    printf("%x\n", ((*(rule_map+0x100))->next->value) & 0xffffffff);
+    printf("%x\n", ((*(rule_map+0x100))->next->next->value) & 0xffffffff);
+
 }
 
 /**
@@ -87,100 +138,103 @@ void recursive_print(SYMBOL *head, FILE *out, int* countp){
 int decompress(FILE *in, FILE *out) {
     // To be implemented.
     int count = 0;
-    char c = fgetc(in);
-    printf("%c\n", c);
+    int c = fgetc(in);
+    // printf("The first byte is %x\n", c & 0xff);
+    // printf("The first byte is %d\n", c);
 
     do{ // new transmission
         c = fgetc(in);
         if(c==0x83){ // new block
+            // printf("The first byte of a new block is %x\n", c & 0xff);
             init_symbols();
             init_rules();
             do{
                 c = fgetc(in);
-                int byte1 = (int)c;
+                int byte1 = c;
                 int v = 0;
-                if((byte1 & 0xe0 >> 4) == 0x1100){ // two bytes
-                    int byte2 = (int)(fgetc(in));
-                    v = toUTF8((byte1<<4)+byte2, 2);
-                } else if((byte1 & 0xf0 >> 4) == 0x1110){ // three bytes
-                    int byte2 = (int)(fgetc(in));
-                    int byte3 = (int)(fgetc(in));
-                    v = toUTF8((byte1<<8)+(byte2<<4)+byte3, 3);
-                } else if((byte1 & 0xf0 >> 4) == 0x1111){ // four bytes
-                    int byte2 = (int)(fgetc(in));
-                    int byte3 = (int)(fgetc(in));
-                    int byte4 = (int)(fgetc(in));
-                    v = toUTF8((byte1<<12)+(byte2<<8)+(byte3<<4)+byte4, 4);
-                } // The first symbol of a rule must be a non terminal symbol
+                // int bytes = 0;
+                // int bytec=0;
+                // int h = (byte1 & 0xe0) >> 4;
+                // printf("The head is %d\n", h);
+                // printf("Decimal Hexidecimal Comparison: %d\n", 12==0xc);
+                if(((byte1 & 0xe0) >> 4) == 0xc){ // two bytes
+                    int byte2 = fgetc(in);
+                    // bytec = 2;
+                    // printf("Bytes is %x\n", ((byte1<<8)+byte2) & 0xffff);
+                    v = toUTF8((byte1<<8)+byte2, 2);
+                } else if(((byte1 & 0xf0) >> 4) == 0xe){ // three bytes
+                    int byte2 = fgetc(in);
+                    int byte3 = fgetc(in);
+                    // bytec = 3;
+                    v = toUTF8((byte1<<16)+(byte2<<8)+byte3, 3);
+                } else if(((byte1 & 0xf0) >> 4) == 0xf){ // four bytes
+                    int byte2 = fgetc(in);
+                    int byte3 = fgetc(in);
+                    int byte4 = fgetc(in);
+                    // bytec = 4;
+                    v = toUTF8((byte1<<24)+(byte2<<16)+(byte3<<8)+byte4, 4);
+                } else {
+                    printf("The byte is %x\n", byte1 & 0xff);
+                }
                 SYMBOL* head= new_rule(v);
+                // printf("The value of the head of the new rule is %x, and the count of bytes is %d\n", v & 0xffffffff, bytec);
                 c = fgetc(in);
 
                 while(c!=0x85 && c!=0x84){
-                    byte1 = (int)c;
+                    // printf("Forming rule body...\n");
+                    byte1 = c;
+                    // printf("The byte is %x\n", byte1 & 0xff);
                     v = 0;
-                    if((byte1 & 0xe0 >> 4) == 0x1100){ // two bytes
-                        int byte2 = (int)(fgetc(in));
-                        v = toUTF8((byte1<<4)+byte2, 2);
-                    } else if((byte1 & 0xf0 >> 4) == 0x1110){ // three bytes
-                        int byte2 = (int)(fgetc(in));
-                        int byte3 = (int)(fgetc(in));
-                        v = toUTF8((byte1<<8)+(byte2<<4)+byte3, 3);
-                    } else if((byte1 & 0xf0 >> 4) == 0x1111){ // four bytes
-                        int byte2 = (int)(fgetc(in));
-                        int byte3 = (int)(fgetc(in));
-                        int byte4 = (int)(fgetc(in));
-                        v = toUTF8((byte1<<12)+(byte2<<8)+(byte3<<4)+byte4, 4);
+                    // bytes = 0;
+                    // bytec = 0;
+                    if((byte1 & 0xe0) >> 4 == 0xc){ // two bytes
+                        int byte2 = fgetc(in);
+                        // bytes = (byte1<<8)+byte2;
+                        // bytec = 2;
+                        v = toUTF8((byte1<<8)+byte2, 2);
+                    } else if((byte1 & 0xf0) >> 4 == 0xe){ // three bytes
+                        int byte2 = fgetc(in);
+                        int byte3 = fgetc(in);
+                        // bytes = (byte1<<16)+(byte2<<8)+byte3;
+                        // bytec = 3;
+                        v = toUTF8((byte1<<16)+(byte2<<8)+byte3, 3);
+                    } else if((byte1 & 0xf0) >> 4 == 0xf){ // four bytes
+                        int byte2 = fgetc(in);
+                        int byte3 = fgetc(in);
+                        int byte4 = fgetc(in);
+                        // bytes = (byte1<<24)+(byte2<<16)+(byte3<<8)+byte4;
+                        // bytec = 4;
+                        v = toUTF8((byte1<<24)+(byte2<<16)+(byte3<<8)+byte4, 4);
                     } else {
                         v = byte1;
+                        // bytes = byte1;
+                        // bytec = 1;
                     }
+                    // printf("The bytes is %x, the value of the new symbol is %x, and the count of bytes is %d\n", bytes, v & 0xffffffff, bytec);
                     if(v>0x7f){ // if non terminal
+                        printf("Adding non terminal symbol\n");
                         SYMBOL *rule = *(rule_map+v); // rule can be null
                         add_symbol(head, new_symbol(v, rule));
                     } else {
+                        printf("Adding terminal symbol\n");
                         add_symbol(head, new_symbol(v, NULL));
                     }
                     c = fgetc(in);
                 }
                 add_rule(head);
             }while(c!=0x84);
-            recursive_print(main_rule, out, &count);
-            fflush(out);
+            // printf("EOB-Printing...");
+            // recursive_print(main_rule, out, &count);
+            // fflush(out);
+            print_array();
+            c = fgetc(in);
         } else {
+            printf("Enter EOF!");
             return EOF;
         }
     }while(c!=0x82);
     return count;
 }
-
-    int toUTF8(int bytes, int bytec){
-        // if(bytec == 1){
-        //     return bytes;
-        // } else
-        if(bytec==2){
-            int left = bytes & 0x1f00;
-            left = left >> 2;
-            int right = bytes & 0x003f;
-            return left + right;
-        } else if(bytec == 3){
-            int left = bytes & 0xf0000;
-            left = left >> 4;
-            int middle = bytes & 0x3f00;
-            middle = middle >> 2;
-            int right = bytes & 0x003f;
-            return left + middle + right;
-        } else if(bytec == 4){
-            int lleft = bytes & 0x7000000;
-            lleft = lleft >> 6;
-            int left = bytes & 0x3f0000;
-            left = left >> 4;
-            int right = bytes & 0x3f00;
-            right = right >> 2;
-            int rright = bytes & 0x3f;
-            return lleft + left + right + rright;
-        } else {
-            return -1; // error
-        }
-    }
 
 /**
  * @brief Validates command line arguments passed to the program.
@@ -227,7 +281,8 @@ int validargs(int argc, char **argv)
                     cp++;
                 }
                 if(size>-1 && size<1025){
-                    size = size<<4;
+                    printf("This size of the block is %d", size);
+                    size = size<<16;
                     global_options = size + 0x2;
                     return 0;
                 } else {

@@ -1,6 +1,7 @@
 #include <criterion/criterion.h>
 #include <criterion/logging.h>
 #include "const.h"
+#include "myheader.h"
 
 Test(basecode_tests_suite, validargs_help_test) {
     int argc = 2;
@@ -15,19 +16,32 @@ Test(basecode_tests_suite, validargs_help_test) {
 }
 
 Test(basecode_tests_suite, validargs_compress_test) {
+   //  int argc = 4;
+   //  char *argv[] = {"bin/sequitur", "-c", "-b", "10", NULL};
+   //  int ret = validargs(argc, argv);
+   //  int exp_ret = 0;
+   //  int opt = global_options;
+   //  int flag = 0x2;
+   //  int exp_size = 10;
+   //  int size = (opt >> 16) & 0xffff;
+   //  cr_assert_eq(ret, exp_ret, "Invalid return for valid args.  Got: %d | Expected: %d",
+		 // ret, exp_ret);
+   //  cr_assert(opt & flag, "Compress mode bit wasn't set. Got: %x", opt);
+   //  cr_assert_eq(exp_size, size, "Block size not properly set. Got: %d | Expected: %d",
+		 // size, exp_size);
     int argc = 4;
-    char *argv[] = {"bin/sequitur", "-c", "-b", "10", NULL};
+    char *argv[] = {"bin/sequitur", "-c", "-b", "1024", NULL};
     int ret = validargs(argc, argv);
     int exp_ret = 0;
     int opt = global_options;
     int flag = 0x2;
-    int exp_size = 10;
+    int exp_size = 1024;
     int size = (opt >> 16) & 0xffff;
     cr_assert_eq(ret, exp_ret, "Invalid return for valid args.  Got: %d | Expected: %d",
-		 ret, exp_ret);
+         ret, exp_ret);
     cr_assert(opt & flag, "Compress mode bit wasn't set. Got: %x", opt);
     cr_assert_eq(exp_size, size, "Block size not properly set. Got: %d | Expected: %d",
-		 exp_size, size);
+         size, exp_size);
 }
 
 Test(basecode_tests_suite, validargs_error_test) {
@@ -51,4 +65,28 @@ Test(basecode_tests_suite, help_system_test) {
     cr_assert_eq(return_code, EXIT_SUCCESS,
                  "Program exited with %d instead of EXIT_SUCCESS",
 		 return_code);
+}
+
+Test(basecode_tests_suite, toUTF8_test) {
+    int bytes = 0xc480;
+    int bytec = 2;
+    int ret = toUTF8(bytes, bytec);
+    int exp_ret = 0x100;
+    cr_assert_eq(ret, exp_ret, "Invalid return for toUTF8. Got: %d | Expected: %d", ret, exp_ret);
+    bytes = 0xefb0b0;
+    bytec = 3;
+    ret = toUTF8(bytes, bytec);
+    exp_ret = 0xfc30;
+    cr_assert_eq(ret, exp_ret, "Invalid return for toUTF8. Got: %d | Expected: %d", ret, exp_ret);
+    bytes = 0xefb0b0;
+    bytec = 3;
+    ret = toUTF8(bytes, bytec);
+    exp_ret = 0xfc30;
+    cr_assert_eq(ret, exp_ret, "Invalid return for toUTF8. Got: %d | Expected: %d", ret, exp_ret);
+    bytes = 0xf7b0b0b0;
+    bytec = 4;
+    ret = toUTF8(bytes, bytec);
+    exp_ret = 0x1f0c30;
+    cr_assert_eq(ret, exp_ret, "Invalid return for toUTF8. Got: %d | Expected: %d", ret, exp_ret);
+
 }

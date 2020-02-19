@@ -22,7 +22,15 @@ SYMBOL* recycled_symbols = NULL;
  */
 void init_symbols(void) {
     // To be implemented.
-    free(symbol_storage);
+    for(int i=0; i<MAX_SYMBOLS; i++){
+        symbol_storage->value = 0;
+        symbol_storage->refcnt = 0;
+        symbol_storage->rule = NULL;
+        symbol_storage->next = NULL;
+        symbol_storage->prev = NULL;
+        symbol_storage->next = NULL;
+        symbol_storage->prevr = NULL;
+    }
     // symbol_storage = NULL;
     num_symbols = 0;
     next_nonterminal_value = FIRST_NONTERMINAL;
@@ -53,6 +61,10 @@ void init_symbols(void) {
  */
 SYMBOL *new_symbol(int value, SYMBOL *rule) {
     // To be implemented.
+    // printf("Creating new symbol, value: %x\n", value & 0xffffffff);
+    if(value<FIRST_NONTERMINAL){
+        rule = NULL;
+    }
     SYMBOL *new_symbol;
     if(recycled_symbols==NULL){
         num_symbols++;
