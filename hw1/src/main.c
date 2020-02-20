@@ -31,7 +31,7 @@ int main(int argc, char **argv)
         USAGE(*argv, EXIT_SUCCESS);
     if(global_options == 0x00000004){
         int count = decompress(stdin, stdout);
-        printf("This count is %d\n", count);
+        // printf("This count is %d\n", count);
     }
     return EXIT_SUCCESS;
 

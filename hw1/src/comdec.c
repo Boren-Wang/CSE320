@@ -33,6 +33,23 @@
  * YOU WILL GET A ZERO!
  */
 
+int value_to_UTF8(int value){
+    if(value<=127) {
+        return value;
+    } else if(value<=2047) {
+        int left = value & 0x7c0;
+        int right = value & 0x3f;
+        return right + (left << 2) + 0xc080;
+    } else if(value<=65535) {
+
+    } else if(value<=1112064) {
+
+    } else {
+        printf("Invalid value!");
+        return -1;
+    }
+}
+
 /**
  * Main compression function.
  * Reads a sequence of bytes from a specified input stream, segments the
@@ -57,10 +74,58 @@
  */
 int compress(FILE *in, FILE *out, int bsize) {
     // To be implemented.
-    return EOF;
+    fputc(0x81, out); // SOT
+    int count = 2;
+    int bnum; // number of bytes in current block read
+    int c = fgetc(in);
+    if(c==EOF){
+        fputc(0x82, out);
+        return 2;
+    }
+    SYMBOL *last_symbol;
+    while(c!=EOF){
+        fputc(0x83, out); // SOB
+        bnum = 0;
+        init_symbols();
+        init_rules();
+        init_digram_hash();
+        while(bnum!=bsize && c!=EOF){ // !!!
+            SYMBOL *new_s = new_symbol(c, NULL);
+            last_symbol = main_rule->prev;
+            insert_after(last_symbol, new_s);
+            check_digram(last_symbol);
+
+            bnum++;
+            c = fgetc(in);
+        }
+        // put all rules
+        // add 0x85 to the end of every rule
+        SYMBOL *current_rule = main_rule;
+        while(current_rule->nextr!=main_rule){
+            while(current_rule->next!=current_rule){
+                int utf8 = value_to_UTF8(current_rule->value);
+                fputc(utf8, out);
+                current_rule = current_rule->next;
+            }
+            int utf8 = value_to_UTF8(current_rule->value);
+            fputc(utf8, out);
+            fputc(0x85, out);
+            current_rule = current_rule->next->nextr;
+        }
+        while(current_rule->next!=current_rule){
+            int utf8 = value_to_UTF8(current_rule->value);
+            fputc(utf8, out);
+            current_rule = current_rule->next;
+        }
+        int utf8 = value_to_UTF8(current_rule->value);
+        fputc(utf8, out);
+        fputc(0x84, out);
+    }
+    fputc(0x82, out);
+    return count;
 }
 
-int toUTF8(int bytes, int bytec){
+int UTF8_to_value(int bytes, int bytec){
     // if(bytec == 1){
     //     return bytes;
     // } else
@@ -174,18 +239,18 @@ int decompress(FILE *in, FILE *out) {
                     int byte2 = fgetc(in);
                     // bytec = 2;
                     // printf("Bytes is %x\n", ((byte1<<8)+byte2) & 0xffff);
-                    v = toUTF8((byte1<<8)+byte2, 2);
+                    v = UTF8_to_value((byte1<<8)+byte2, 2);
                 } else if(((byte1 & 0xf0) >> 4) == 0xe){ // three bytes
                     int byte2 = fgetc(in);
                     int byte3 = fgetc(in);
                     // bytec = 3;
-                    v = toUTF8((byte1<<16)+(byte2<<8)+byte3, 3);
+                    v = UTF8_to_value((byte1<<16)+(byte2<<8)+byte3, 3);
                 } else if(((byte1 & 0xf0) >> 4) == 0xf){ // four bytes
                     int byte2 = fgetc(in);
                     int byte3 = fgetc(in);
                     int byte4 = fgetc(in);
                     // bytec = 4;
-                    v = toUTF8((byte1<<24)+(byte2<<16)+(byte3<<8)+byte4, 4);
+                    v = UTF8_to_value((byte1<<24)+(byte2<<16)+(byte3<<8)+byte4, 4);
                 } else {
                     printf("The byte is %x\n", byte1 & 0xff);
                 }
@@ -204,20 +269,20 @@ int decompress(FILE *in, FILE *out) {
                         int byte2 = fgetc(in);
                         // bytes = (byte1<<8)+byte2;
                         // bytec = 2;
-                        v = toUTF8((byte1<<8)+byte2, 2);
+                        v = UTF8_to_value((byte1<<8)+byte2, 2);
                     } else if((byte1 & 0xf0) >> 4 == 0xe){ // three bytes
                         int byte2 = fgetc(in);
                         int byte3 = fgetc(in);
                         // bytes = (byte1<<16)+(byte2<<8)+byte3;
                         // bytec = 3;
-                        v = toUTF8((byte1<<16)+(byte2<<8)+byte3, 3);
+                        v = UTF8_to_value((byte1<<16)+(byte2<<8)+byte3, 3);
                     } else if((byte1 & 0xf0) >> 4 == 0xf){ // four bytes
                         int byte2 = fgetc(in);
                         int byte3 = fgetc(in);
                         int byte4 = fgetc(in);
                         // bytes = (byte1<<24)+(byte2<<16)+(byte3<<8)+byte4;
                         // bytec = 4;
-                        v = toUTF8((byte1<<24)+(byte2<<16)+(byte3<<8)+byte4, 4);
+                        v = UTF8_to_value((byte1<<24)+(byte2<<16)+(byte3<<8)+byte4, 4);
                     } else {
                         v = byte1;
                         // bytes = byte1;
