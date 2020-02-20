@@ -67,26 +67,51 @@ Test(basecode_tests_suite, help_system_test) {
 		 return_code);
 }
 
-Test(basecode_tests_suite, toUTF8_test) {
+Test(basecode_tests_suite, UTF8_to_value_test) {
     int bytes = 0xc480;
     int bytec = 2;
-    int ret = toUTF8(bytes, bytec);
+    int ret = UTF8_to_value(bytes, bytec);
     int exp_ret = 0x100;
-    cr_assert_eq(ret, exp_ret, "Invalid return for toUTF8. Got: %d | Expected: %d", ret, exp_ret);
+    cr_assert_eq(ret, exp_ret, "Invalid return for UTF8_to_value. Got: %d | Expected: %d", ret, exp_ret);
+
     bytes = 0xefb0b0;
     bytec = 3;
-    ret = toUTF8(bytes, bytec);
+    ret = UTF8_to_value(bytes, bytec);
     exp_ret = 0xfc30;
-    cr_assert_eq(ret, exp_ret, "Invalid return for toUTF8. Got: %d | Expected: %d", ret, exp_ret);
-    bytes = 0xefb0b0;
-    bytec = 3;
-    ret = toUTF8(bytes, bytec);
-    exp_ret = 0xfc30;
-    cr_assert_eq(ret, exp_ret, "Invalid return for toUTF8. Got: %d | Expected: %d", ret, exp_ret);
+    cr_assert_eq(ret, exp_ret, "Invalid return for UTF8_to_value. Got: %d | Expected: %d", ret, exp_ret);
+
     bytes = 0xf7b0b0b0;
     bytec = 4;
-    ret = toUTF8(bytes, bytec);
+    ret = UTF8_to_value(bytes, bytec);
     exp_ret = 0x1f0c30;
-    cr_assert_eq(ret, exp_ret, "Invalid return for toUTF8. Got: %d | Expected: %d", ret, exp_ret);
+    cr_assert_eq(ret, exp_ret, "Invalid return for UTF8_to_value. Got: %d | Expected: %d", ret, exp_ret);
 
+    bytes = 0xf7bfbfbf;
+    bytec = 4;
+    ret = UTF8_to_value(bytes, bytec);
+    exp_ret = 0x1fffff;
+    cr_assert_eq(ret, exp_ret, "Invalid return for UTF8_to_value. Got: %d | Expected: %d", ret, exp_ret);
+
+}
+
+Test(basecode_tests_suite, value_to_UTF8_test) {
+    int value = 0x100;
+    int ret = value_to_UTF8(value);
+    int exp_ret = 0xc480;
+    cr_assert_eq(ret, exp_ret, "Invalid return for value_to_UTF8. Got: %d | Expected: %d", ret, exp_ret);
+
+    value = 0xfc30;
+    ret = value_to_UTF8(value);
+    exp_ret = 0xefb0b0;
+    cr_assert_eq(ret, exp_ret, "Invalid return for value_to_UTF8. Got: %x | Expected: %x", ret & 0xffffffff, exp_ret & 0xffffffff);
+
+    value = 0x1f0c30;
+    ret = value_to_UTF8(value);
+    exp_ret = 0xf7b0b0b0;
+    cr_assert_eq(ret, exp_ret, "Invalid return for value_to_UTF8. Got: %x | Expected: %x", ret & 0xffffffff, exp_ret & 0xffffffff);
+
+    value = 0x1fffff;
+    ret = value_to_UTF8(value);
+    exp_ret = 0xf7bfbfbf;
+    cr_assert_eq(ret, exp_ret, "Invalid return for value_to_UTF8. Got: %x | Expected: %x", ret & 0xffffffff, exp_ret & 0xffffffff);
 }

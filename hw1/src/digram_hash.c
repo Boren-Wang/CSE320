@@ -34,8 +34,10 @@ SYMBOL *digram_get(int v1, int v2) {
     SYMBOL **end = digram_table + MAX_DIGRAMS - 1;
 
     for(SYMBOL** index=start; index<=end; index++){
-        if(*index==NULL){
+        if((*index)==NULL){
             return NULL;
+        } else if((*index)==TOMBSTONE) {
+            continue;
         } else {
             SYMBOL s1 = **index;
             SYMBOL s2 = *(*index+1);
@@ -46,8 +48,10 @@ SYMBOL *digram_get(int v1, int v2) {
     }
 
     for(SYMBOL** index=digram_table; index<=start-1; index++){
-        if(*index==NULL){
+        if((*index)==NULL){
             return NULL;
+        } else if((*index)==TOMBSTONE) {
+            continue;
         } else {
             SYMBOL s1 = **index;
             SYMBOL s2 = *(*index+1);
@@ -89,7 +93,7 @@ int digram_delete(SYMBOL *digram) {
     SYMBOL **end = digram_table + MAX_DIGRAMS - 1;
 
     for(SYMBOL** index=start; index<=end; index++){
-        // if(*index==NULL || (*index)==TOMBSTONE){
+        // if((*index)==NULL || (*index)==TOMBSTONE){
         //     continue;
         // } else {
         //     SYMBOL s1 = **index;
@@ -99,14 +103,16 @@ int digram_delete(SYMBOL *digram) {
         //         return 0;
         //     }
         // }
-        if(*index == digram){
+        if((*index) == digram){
             (*index) = TOMBSTONE;
+            return 0;
+        } else if((*index) == NULL){
             return 0;
         }
     }
 
     for(SYMBOL** index=digram_table; index<=start-1; index++){
-        // if(*index==NULL || (*index)==TOMBSTONE){
+        // if((*index)==NULL || (*index)==TOMBSTONE){
         //     *index = digram;
         //     return 0;
         // } else {
@@ -117,8 +123,10 @@ int digram_delete(SYMBOL *digram) {
         //         return 0;
         //     }
         // }
-        if(*index == digram){
+        if((*index) == digram){
             (*index) = TOMBSTONE;
+            return 0;
+        } else if((*index) == NULL){
             return 0;
         }
     }
@@ -143,7 +151,7 @@ int digram_put(SYMBOL *digram) {
     SYMBOL **end = digram_table + MAX_DIGRAMS - 1;
 
     for(SYMBOL** index=start; index<=end; index++){
-        if(*index==NULL || (*index)==TOMBSTONE){
+        if((*index)==NULL || (*index)==TOMBSTONE){
             *index = digram;
             return 0;
         } else {
@@ -156,7 +164,7 @@ int digram_put(SYMBOL *digram) {
     }
 
     for(SYMBOL** index=digram_table; index<=start-1; index++){
-        if(*index==NULL || (*index)==TOMBSTONE){
+        if((*index)==NULL || (*index)==TOMBSTONE){
             *index = digram;
             return 0;
         } else {

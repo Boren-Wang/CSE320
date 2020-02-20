@@ -189,13 +189,12 @@ static void process_match(SYMBOL *this, SYMBOL *match) {
     debug("Process matching digrams <%lu> and <%lu>",
 	  SYMBOL_INDEX(this), SYMBOL_INDEX(match));
     SYMBOL *rule = NULL;
-
     if(IS_RULE_HEAD(match->prev) && IS_RULE_HEAD(match->next->next)) {
 	// If the digram headed by match constitutes the entire right-hand side
 	// of a rule, then we don't create any new rule.  Instead we use the
 	// existing rule to replace_digram for the newly inserted digram.
-	rule = match->prev->rule;
-	replace_digram(this, match->prev->rule);
+	   rule = match->prev->rule;
+	   replace_digram(this, match->prev->rule);
     } else {
 	// Otherwise, we create a new rule.
 	// Note that only one digram is created by this rule, and the insert_after
@@ -203,10 +202,10 @@ static void process_match(SYMBOL *this, SYMBOL *match) {
 	// In fact, no digrams will be deleted during the construction of
 	// the new rule because the calls are being made in such a way that we are
 	// never overwriting any pointers that were previously non-NULL.
-	rule = new_rule(next_nonterminal_value++);
-	add_rule(rule);
-	insert_after(rule->prev, new_symbol(this->value, this->rule));
-	insert_after(rule->prev, new_symbol(this->next->value, this->next->rule));
+    	rule = new_rule(next_nonterminal_value++);
+    	add_rule(rule);
+    	insert_after(rule->prev, new_symbol(this->value, this->rule));
+    	insert_after(rule->prev, new_symbol(this->next->value, this->next->rule));
 
 	// Now, replace the two existing instances of the right-hand side of the
 	// rule by nonterminals that refer to the rule.
@@ -217,8 +216,8 @@ static void process_match(SYMBOL *this, SYMBOL *match) {
 	// However, since the nonterminal symbol is a freshly created one that
 	// did not exist before, these replacements cannot result in the creation
 	// of digrams that duplicate already existing ones.
-	replace_digram(match, rule);
-	replace_digram(this, rule);
+	   replace_digram(match, rule);
+	   replace_digram(this, rule);
 
 	// Insert the right-hand side of the new rule into the digram table.
 	// Note that no other rules that might have been created as a result of the
@@ -226,7 +225,7 @@ static void process_match(SYMBOL *this, SYMBOL *match) {
 	// we are about to insert here, because, the right-hand sides of any of these
 	// other rules must contain the new nonterminal that is at the head of the
 	// current rule but not in the body of the current rule.
-	digram_put(rule->next);
+	   digram_put(rule->next);
     }
 
     // We have now restored the "no repeated digram" property, but it might be that

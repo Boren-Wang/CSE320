@@ -33,6 +33,13 @@ int main(int argc, char **argv)
         int count = decompress(stdin, stdout);
         // printf("This count is %d\n", count);
     }
+    if((global_options & 0x2) == 2){
+        printf("Enter compress block!\n");
+        int bszie = ((global_options >> 16) & 0xffff) * 1000;
+        int count = compress(stdin, stdout, bszie);
+        // printf("This count is %d\n", count);
+    }
+
     return EXIT_SUCCESS;
 
 }

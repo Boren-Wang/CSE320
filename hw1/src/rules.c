@@ -76,12 +76,14 @@ SYMBOL *new_rule(int v) {
     // To be implemented.
     // printf("The value of the rule head is %x\n",  v&0xffffffff);
     if(v<FIRST_NONTERMINAL){
-        printf("The head of a rule needs to be a nonterminal symbol!");
+        fprintf(stderr, "The head of a rule needs to be a nonterminal symbol!");
     }
     SYMBOL *new_rule = new_symbol(v, NULL);
     new_rule->rule = new_rule;
     new_rule->next = new_rule;
     new_rule->prev = new_rule;
+    new_rule->nextr = new_rule;
+    new_rule->prevr = new_rule;
     *(rule_map+v) = new_rule;
     return new_rule;
 }
@@ -100,10 +102,12 @@ SYMBOL *new_rule(int v) {
 void add_rule(SYMBOL *rule) {
     // To be implemented.
     if(main_rule==NULL){
-        main_rule  = rule;
-        main_rule->nextr = main_rule;
-        main_rule->prevr = main_rule;
+        main_rule = rule;
+        rule->nextr = main_rule;
+        rule->prevr = main_rule;
     } else {
+        debug("Main rule is not null");
+        debug("%d", (main_rule->prevr)==NULL);
         main_rule->prevr->nextr = rule;
         rule->nextr  =  main_rule;
         rule->prevr = main_rule->prevr;
@@ -153,7 +157,12 @@ SYMBOL *ref_rule(SYMBOL *rule) {
  */
 void unref_rule(SYMBOL *rule) {
     // To be implemented.
+    if(rule->refcnt==0){
+        fprintf(stderr, "The reference count is already 0!\n");
+        abort();
+    }
     rule->refcnt--;
+
 }
 
 void add_symbol(SYMBOL *rule, SYMBOL *symbol){
