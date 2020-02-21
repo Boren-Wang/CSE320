@@ -30,7 +30,7 @@ void init_digram_hash(void) {
  */
 SYMBOL *digram_get(int v1, int v2) {
     // To be implemented.
-    debug("Looking up digram: (%d, %d)", v1, v2);
+    // debug("Looking up digram: (%d, %d)", v1, v2);
     int hash = DIGRAM_HASH(v1, v2);
     SYMBOL **start = digram_table + hash;
     SYMBOL **end = digram_table + MAX_DIGRAMS - 1;
@@ -62,7 +62,7 @@ SYMBOL *digram_get(int v1, int v2) {
             }
         }
     }
-    debug("Not found!");
+    // debug("Not found!");
     return NULL;
 }
 
@@ -107,7 +107,7 @@ int digram_delete(SYMBOL *digram) {
         // }
         if((*index) == digram){
             (*index) = TOMBSTONE;
-            debug("Deleting digram: (%d, %d)", v1, v2);
+            // debug("Deleting digram: (%d, %d)", v1, v2);
             return 0;
         }
     }
@@ -126,11 +126,11 @@ int digram_delete(SYMBOL *digram) {
         // }
         if((*index) == digram){
             (*index) = TOMBSTONE;
-            debug("Deleting digram: (%d, %d)", v1, v2);
+            // debug("Deleting digram: (%d, %d)", v1, v2);
             return 0;
         }
     }
-    debug("Not found!");
+    // debug("Not found!");
     return -1; // The digram does not exist
 }
 
@@ -159,7 +159,7 @@ int digram_put(SYMBOL *digram) {
     for(SYMBOL** index=start; index<=end; index++){
         if((*index)==NULL || (*index)==TOMBSTONE){
             *index = digram;
-            debug("Putting digram: (%d, %d)", v1, v2);
+            // debug("Putting digram: (%d, %d)", v1, v2);
             return 0;
         } else {
             SYMBOL s1 = **index;
@@ -173,7 +173,7 @@ int digram_put(SYMBOL *digram) {
     for(SYMBOL** index=digram_table; index<=start-1; index++){
         if((*index)==NULL || (*index)==TOMBSTONE){
             *index = digram;
-            debug("Putting digram: (%d, %d)", v1, v2);
+            // debug("Putting digram: (%d, %d)", v1, v2);
             return 0;
         } else {
             SYMBOL s1 = **index;

@@ -85,11 +85,11 @@ SYMBOL *new_symbol(int value, SYMBOL *rule) {
     if(rule!=NULL){
             ref_rule(rule);
     }
-    if(value<FIRST_NONTERMINAL){
-        debug("New terminal symbol (%d)", value);
-    } else {
-        debug("New non-terminal symbol (%d)", value);
-    }
+    // if(value<FIRST_NONTERMINAL){
+    //     debug("New terminal symbol (%d)", value);
+    // } else {
+    //     debug("New non-terminal symbol (%d)", value);
+    // }
     return new_symbol;
 }
 
@@ -118,5 +118,5 @@ void recycle_symbol(SYMBOL *s) {
     recycled_symbols -> prev = NULL;
     recycled_symbols -> nextr = NULL;
     recycled_symbols -> prevr = NULL;
-    debug("Recycle symbol (%d)", s->value);
+    // debug("Recycle symbol (%d)", s->value);
 }

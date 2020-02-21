@@ -85,7 +85,7 @@ SYMBOL *new_rule(int v) {
     new_rule->nextr = new_rule;
     new_rule->prevr = new_rule;
     *(rule_map+v) = new_rule;
-    debug("New Rule! Head: %d", v);
+    // debug("New Rule! Head: %d", v);
     return new_rule;
 }
 
@@ -114,7 +114,7 @@ void add_rule(SYMBOL *rule) {
         rule->prevr = main_rule->prevr;
         main_rule->prevr = rule;
     }
-    debug("Add a new rule (%d)", rule->value);
+    // debug("Add a new rule (%d)", rule->value);
 }
 
 /**
@@ -138,7 +138,7 @@ void delete_rule(SYMBOL *rule) {
     if(rule->refcnt==0){
         recycle_symbol(rule);
     }
-    debug("Delete a rule (%d)", rule->value);
+    // debug("Delete a rule (%d)", rule->value);
 }
 
 /**
