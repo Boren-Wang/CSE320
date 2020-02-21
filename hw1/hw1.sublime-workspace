@@ -1,1 +1,345 @@
-{}
+{
+	"auto_complete":
+	{
+		"selected_items":
+		[
+			[
+				"ne",
+				"next_nonterminal_value"
+			],
+			[
+				"st",
+				"stderr"
+			],
+			[
+				"new",
+				"new_rule"
+			],
+			[
+				"b",
+				"bsize"
+			],
+			[
+				"pr",
+				"printUTF8"
+			],
+			[
+				"val",
+				"value_to_UTF8"
+			],
+			[
+				"nex",
+				"nextr"
+			],
+			[
+				"curr",
+				"current_rule"
+			],
+			[
+				"cur",
+				"current_rule"
+			],
+			[
+				"cu",
+				"current_rule"
+			],
+			[
+				"va",
+				"value_to_UTF8"
+			],
+			[
+				"0x",
+				"0x82"
+			],
+			[
+				"c",
+				"current"
+			],
+			[
+				"las",
+				"last_symbol"
+			],
+			[
+				"S",
+				"SYMBOL"
+			],
+			[
+				"int",
+				"init_rules"
+			],
+			[
+				"0xff",
+				"0xffffffff"
+			],
+			[
+				"re",
+				"referenced"
+			],
+			[
+				"v",
+				"value"
+			],
+			[
+				"prin",
+				"print_array"
+			],
+			[
+				"byt",
+				"byte1"
+			],
+			[
+				"exp_",
+				"exp_ret"
+			],
+			[
+				"ex",
+				"exp_ret"
+			],
+			[
+				"cr_a",
+				"cr_assert_eq"
+			],
+			[
+				"to",
+				"toUTF8_test"
+			],
+			[
+				"exp",
+				"exp_size"
+			],
+			[
+				"sym",
+				"symbol_storage"
+			],
+			[
+				"rule",
+				"rule_map"
+			],
+			[
+				"da",
+				"digram_table"
+			],
+			[
+				"rec",
+				"recycled_symbols"
+			],
+			[
+				"recycle",
+				"recycled_symbols"
+			],
+			[
+				"main",
+				"main_rule"
+			],
+			[
+				"glob",
+				"global_options"
+			],
+			[
+				"glo",
+				"global_options"
+			]
+		]
+	},
+	"build_system": "",
+	"build_system_choices":
+	[
+	],
+	"build_varint": "",
+	"command_palette":
+	{
+		"height": 0.0,
+		"last_filter": "",
+		"selected_items":
+		[
+		],
+		"width": 0.0
+	},
+	"console":
+	{
+		"height": 0.0,
+		"history":
+		[
+		]
+	},
+	"distraction_free":
+	{
+		"menu_visible": true,
+		"show_minimap": false,
+		"show_open_files": false,
+		"show_tabs": false,
+		"side_bar_visible": false,
+		"status_bar_visible": false
+	},
+	"file_history":
+	[
+		"/home/student/borwang/hw1/src/symbol.c",
+		"/home/student/borwang/hw1/include/myheader.h",
+		"/home/student/borwang/hw1/src/sequitur.c",
+		"/home/student/borwang/hw1/src/rules.c",
+		"/home/student/borwang/hw1/rsrc/test.txt",
+		"/home/student/borwang/hw1/src/digram_hash.c",
+		"/home/student/borwang/hw1/include/const.h",
+		"/home/student/borwang/hw1/include/sequitur.h",
+		"/home/student/borwang/hw1/src/main.c",
+		"/home/student/borwang/hw1/tests/hw1_tests.c",
+		"/home/student/borwang/hw1/rsrc/sequitur.c.seq",
+		"/home/student/borwang/hw1/src/comdec.c",
+		"/home/student/borwang/hw0/src/hi.c",
+		"/usr/include/stdio.h",
+		"/home/student/borwang/README.md",
+		"/home/borwang",
+		"/borwang"
+	],
+	"find":
+	{
+		"height": 39.0
+	},
+	"find_in_files":
+	{
+		"height": 158.0,
+		"where_history":
+		[
+			""
+		]
+	},
+	"find_state":
+	{
+		"case_sensitive": false,
+		"find_history":
+		[
+			"here",
+			"ref_rule",
+			"refcnt",
+			"index==",
+			"+4",
+			"260",
+			"next_nonterminal_value",
+			"the size of the block",
+			"2 << 21",
+			"toUTF8",
+			"the value of the",
+			"first body",
+			"the rule is",
+			"add_symbol",
+			"rule_map",
+			"rule",
+			"rule_map",
+			"recycle",
+			"free",
+			"SYMBOL_VALUE_MAX",
+			"tombstone",
+			"MAX_DIGRAM",
+			"HASH",
+			"diagram_hash",
+			"insert_after",
+			"IS_NONTERMINAL",
+			"NONTERM",
+			"IF_NON",
+			"next_non",
+			"count",
+			"recycle_symbol",
+			"recycle"
+		],
+		"highlight": true,
+		"in_selection": false,
+		"preserve_case": false,
+		"regex": false,
+		"replace_history":
+		[
+		],
+		"reverse": false,
+		"show_context": true,
+		"use_buffer2": true,
+		"whole_word": false,
+		"wrap": true
+	},
+	"incremental_find":
+	{
+		"height": 26.0
+	},
+	"input":
+	{
+		"height": 0.0
+	},
+	"layout":
+	{
+		"cells":
+		[
+			[
+				0,
+				0,
+				1,
+				1
+			]
+		],
+		"cols":
+		[
+			0.0,
+			1.0
+		],
+		"rows":
+		[
+			0.0,
+			1.0
+		]
+	},
+	"menu_visible": true,
+	"output.SublimeLinter":
+	{
+		"height": 0.0
+	},
+	"output.find_results":
+	{
+		"height": 0.0
+	},
+	"pinned_build_system": "",
+	"replace":
+	{
+		"height": 48.0
+	},
+	"save_all_on_build": true,
+	"select_file":
+	{
+		"height": 0.0,
+		"last_filter": "",
+		"selected_items":
+		[
+			[
+				"",
+				"~/.config/sublime-text-3/Packages/User/SublimeLinter.sublime-settings"
+			]
+		],
+		"width": 0.0
+	},
+	"select_project":
+	{
+		"height": 0.0,
+		"last_filter": "",
+		"selected_items":
+		[
+		],
+		"width": 0.0
+	},
+	"select_symbol":
+	{
+		"height": 0.0,
+		"last_filter": "",
+		"selected_items":
+		[
+		],
+		"width": 0.0
+	},
+	"settings":
+	{
+	},
+	"show_minimap": true,
+	"show_open_files": false,
+	"show_tabs": true,
+	"side_bar_visible": true,
+	"side_bar_width": 231.0,
+	"status_bar_visible": true,
+	"template_settings":
+	{
+	}
+}

@@ -74,6 +74,12 @@ Test(basecode_tests_suite, UTF8_to_value_test) {
     int exp_ret = 0x100;
     cr_assert_eq(ret, exp_ret, "Invalid return for UTF8_to_value. Got: %d | Expected: %d", ret, exp_ret);
 
+    bytes = 0xdbb7;
+    bytec = 3;
+    ret = UTF8_to_value(bytes, bytec);
+    exp_ret = 0x6f7;
+    cr_assert_eq(ret, exp_ret, "Invalid return for UTF8_to_value. Got: %d | Expected: %d", ret, exp_ret);
+
     bytes = 0xefb0b0;
     bytec = 3;
     ret = UTF8_to_value(bytes, bytec);
@@ -95,9 +101,14 @@ Test(basecode_tests_suite, UTF8_to_value_test) {
 }
 
 Test(basecode_tests_suite, value_to_UTF8_test) {
-    int value = 0x100;
+    int value = 0x109;
     int ret = value_to_UTF8(value);
-    int exp_ret = 0xc480;
+    int exp_ret = 0xc489;
+    cr_assert_eq(ret, exp_ret, "Invalid return for value_to_UTF8. Got: %d | Expected: %d", ret, exp_ret);
+
+    value = 0x6f7;
+    ret = value_to_UTF8(value);
+    exp_ret = 0xdbb7;
     cr_assert_eq(ret, exp_ret, "Invalid return for value_to_UTF8. Got: %d | Expected: %d", ret, exp_ret);
 
     value = 0xfc30;

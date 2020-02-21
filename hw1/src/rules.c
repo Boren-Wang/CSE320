@@ -76,7 +76,7 @@ SYMBOL *new_rule(int v) {
     // To be implemented.
     // printf("The value of the rule head is %x\n",  v&0xffffffff);
     if(v<FIRST_NONTERMINAL){
-        fprintf(stderr, "The head of a rule needs to be a nonterminal symbol!");
+        fprintf(stderr, "The head of a rule needs to be a nonterminal symbol!\n");
     }
     SYMBOL *new_rule = new_symbol(v, NULL);
     new_rule->rule = new_rule;
@@ -128,6 +128,9 @@ void add_rule(SYMBOL *rule) {
  */
 void delete_rule(SYMBOL *rule) {
     // To be implemented.
+    if(rule->prevr==rule && rule->nextr==rule){
+        main_rule=NULL;
+    }
     rule->prevr->nextr = rule->nextr;
     rule->nextr->prevr = rule->prevr;
     if(rule->refcnt==0){

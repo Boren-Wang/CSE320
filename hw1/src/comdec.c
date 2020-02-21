@@ -52,26 +52,39 @@ int value_to_UTF8(int value){
         int rright  = value & 0x3f;
         return rright + (right << 2) + (left << 4) + (lleft << 6) + 0xf0808080;
     } else {
-        printf("Invalid value!");
+        fprintf(stderr, "Invalid value!\n");
         return -1;
     }
 }
 
-void printUTF8(int utf8_value, FILE *out){
+void printUTF8(int utf8_value, FILE *out, int *countp){
     int a = (utf8_value & 0xff000000) >> 24;
     int b = (utf8_value & 0xff0000) >> 16;
     int c = (utf8_value & 0xff00) >> 8;
     int d = utf8_value & 0xff;
-    if(a!=0x00){
+    // printf("utf8_value: %x\n", utf8_value&0xffffffff);
+    // printf("a: %x\n", a&0xffffffff);
+    // printf("b: %x\n", b&0xffffffff);
+    // printf("c: %x\n", c&0xffffffff);
+    // printf("d: %x\n", d&0xffffffff);
+    if(a!=0){
+        // printf("a: %x\n", a&0xffffffff);
         fputc(a, out);
+        (*countp)++;
     }
-    if(b!=0x00){
-        fputc(a, out);
+    if(b!=0){
+        // printf("b: %x\n", b&0xffffffff);
+        fputc(b, out);
+        (*countp)++;
     }
-    if(c!=0x00){
-        fputc(a, out);
+    if(c!=0){
+        // printf("c: %x\n", c&0xffffffff);
+        fputc(c, out);
+        (*countp)++;
     }
+    // printf("d: %x\n", d&0xffffffff);
     fputc(d, out);
+    (*countp)++;
 }
 
 /**
@@ -98,21 +111,20 @@ void printUTF8(int utf8_value, FILE *out){
  */
 int compress(FILE *in, FILE *out, int bsize) {
     // To be implemented.
-    printf("Compression starts! The bsize is %d\n", bsize);
-    printf("test\n");
+    // printf("Compression starts! The bsize is %d\n", bsize);
     fputc(0x81, out); // SOT
     int count = 2;
     int bnum; // number of bytes in current block read
     int c = fgetc(in);
-    printf("First byte is %c\n", c);
     if(c==EOF){
-        printf("No content!\n");
+        // printf("No content!\n");
         fputc(0x82, out);
         fflush(out);
         return 2;
     }
     while(c!=EOF){
         fputc(0x83, out); // SOB
+        count++;
         bnum = 0;
         init_symbols();
         init_rules();
@@ -121,12 +133,9 @@ int compress(FILE *in, FILE *out, int bsize) {
         while(bnum!=bsize && c!=EOF){ // !!!
             SYMBOL * last_symbol = main_rule->prev;
             SYMBOL *new_s = new_symbol(c, NULL);
-            printf("Last symbol is %c\n", last_symbol->value);
-            printf("New symbol is %c\n", new_s->value);
+            // printf("Last symbol is %c\n", last_symbol->value);
+            // printf("New symbol is %c\n", new_s->value);
             if(last_symbol == main_rule){
-                if(IS_RULE_HEAD(main_rule)){
-                    printf("Main_rule is rule head!");
-                }
                 insert_after(last_symbol, new_s);
             } else {
                 insert_after(last_symbol, new_s);
@@ -141,32 +150,36 @@ int compress(FILE *in, FILE *out, int bsize) {
         // add 0x85 to the end of every rule
         SYMBOL *current_rule = main_rule;
         while(current_rule->nextr!=main_rule){
-            printf("Current rule is %x\n", (current_rule->value) & 0xffffffff);
+            // printf("Current rule is %d\n", (current_rule->value));
             SYMBOL *current_symbol = current_rule;
             while(current_symbol->next!=current_rule){
                 int utf8 = value_to_UTF8(current_symbol->value);
-                printUTF8(utf8, out);
-                printf("Current symbol is %d\n", current_symbol->value);
+                // printf("Current symbol is %d", current_symbol->value);
+                printUTF8(utf8, out, &count);
                 current_symbol = current_symbol->next;
             }
             int utf8 = value_to_UTF8(current_symbol->value);
-            printUTF8(utf8, out);
+            // printf("Last symbol is %d", current_symbol->value);
+            printUTF8(utf8, out, &count);
             fputc(0x85, out);
-            printf("Last symbol is %d\n", current_symbol->value);
+            count++;
             current_rule = current_rule->nextr;
         }
-        printf("Last rule is %x\n", current_rule->value & 0xffffffff);
+        // printf("Last rule is %d\n", current_rule->value);
         SYMBOL *current_symbol = current_rule;
         while(current_symbol->next!=current_rule){
             int utf8 = value_to_UTF8(current_symbol->value);
-            printUTF8(utf8, out);
+            // printf("Current symbol is %d", current_symbol->value);
+            printUTF8(utf8, out, &count);
             current_symbol = current_symbol->next;
         }
         int utf8 = value_to_UTF8(current_symbol->value);
-        printUTF8(utf8, out);
+        // printf("Last symbol is %d", current_symbol->value);
+        printUTF8(utf8, out, &count);
         fputc(0x84, out);
+        count++;
     }
-    printf("File ends!\n");
+    // printf("File ends!\n");
     fputc(0x82, out);
     fflush(out);
     return count;
@@ -264,6 +277,9 @@ int decompress(FILE *in, FILE *out) {
     // To be implemented.
     int count = 0;
     int c = fgetc(in);
+    if(c!=0x81){
+        return EOF;
+    }
     // printf("The first byte is %x\n", c & 0xff);
     // printf("The first byte is %d\n", c);
     c = fgetc(in);
@@ -275,6 +291,7 @@ int decompress(FILE *in, FILE *out) {
             init_rules();
             do{
                 c = fgetc(in);
+                if(c==EOF){ return EOF;}
                 int byte1 = c;
                 int v = 0;
                 // int bytes = 0;
@@ -299,11 +316,13 @@ int decompress(FILE *in, FILE *out) {
                     // bytec = 4;
                     v = UTF8_to_value((byte1<<24)+(byte2<<16)+(byte3<<8)+byte4, 4);
                 } else {
-                    printf("The byte is %x\n", byte1 & 0xff);
+                    // fprintf(stderr, "The head of a rule needs to be a non terminal symbol\n");
+                    return EOF;
                 }
                 SYMBOL* head= new_rule(v);
                 // printf("The value of the head of the new rule is %x, and the count of bytes is %d\n", v & 0xffffffff, bytec);
                 c = fgetc(in);
+                if(c==EOF){ return EOF;}
 
                 while(c!=0x85 && c!=0x84){
                     // printf("Forming rule body...\n");
@@ -352,6 +371,7 @@ int decompress(FILE *in, FILE *out) {
                         add_symbol(head, new_symbol(v, NULL));
                     }
                     c = fgetc(in);
+                    if(c==EOF){ return EOF;}
                 }
                 add_rule(head);
             }while(c!=0x84);
@@ -361,9 +381,9 @@ int decompress(FILE *in, FILE *out) {
             // print_array();
             c = fgetc(in);
             // printf("EOB, The next byte is %x\n", c & 0xffffffff);
+        } else if(c==0x82){
+            return EOF;
         } else {
-            printf("EOF!");
-            printf("The byte is %x\n", c & 0xffffffff);
             return EOF;
         }
     }while(c!=0x82);
