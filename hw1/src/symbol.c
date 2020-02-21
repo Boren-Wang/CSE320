@@ -67,6 +67,10 @@ SYMBOL *new_symbol(int value, SYMBOL *rule) {
     }
     SYMBOL *new_symbol;
     if(recycled_symbols==NULL){
+        if(num_symbols==MAX_SYMBOLS){
+            fprintf(stderr, "The symbol storage is exhausted!\n");
+            abort();
+        }
         num_symbols++;
         new_symbol = symbol_storage+num_symbols-1;
         new_symbol->value = value;
@@ -78,9 +82,13 @@ SYMBOL *new_symbol(int value, SYMBOL *rule) {
         new_symbol->value = value;
         new_symbol->rule = rule;
     }
-
     if(rule!=NULL){
             ref_rule(rule);
+    }
+    if(value<FIRST_NONTERMINAL){
+        debug("New terminal symbol (%d)", value);
+    } else {
+        debug("New non-terminal symbol (%d)", value);
     }
     return new_symbol;
 }
@@ -110,4 +118,5 @@ void recycle_symbol(SYMBOL *s) {
     recycled_symbols -> prev = NULL;
     recycled_symbols -> nextr = NULL;
     recycled_symbols -> prevr = NULL;
+    debug("Recycle symbol (%d)", s->value);
 }

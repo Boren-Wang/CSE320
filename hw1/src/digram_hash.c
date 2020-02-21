@@ -1,5 +1,6 @@
 #include "const.h"
 #include "sequitur.h"
+#include "myheader.h"
 
 /*
  * Digram hash table.
@@ -29,6 +30,7 @@ void init_digram_hash(void) {
  */
 SYMBOL *digram_get(int v1, int v2) {
     // To be implemented.
+    debug("Looking up digram: (%d, %d)", v1, v2);
     int hash = DIGRAM_HASH(v1, v2);
     SYMBOL **start = digram_table + hash;
     SYMBOL **end = digram_table + MAX_DIGRAMS - 1;
@@ -40,7 +42,7 @@ SYMBOL *digram_get(int v1, int v2) {
             continue;
         } else {
             SYMBOL s1 = **index;
-            SYMBOL s2 = *(*index+1);
+            SYMBOL s2 = *((*index)->next);
             if(s1.value==v1 && s2.value==v2){
                 return *index;
             }
@@ -54,13 +56,13 @@ SYMBOL *digram_get(int v1, int v2) {
             continue;
         } else {
             SYMBOL s1 = **index;
-            SYMBOL s2 = *(*index+1);
+            SYMBOL s2 = *((*index)->next);
             if(s1.value==v1 && s2.value==v2){
                 return *index;
             }
         }
     }
-
+    debug("Not found!");
     return NULL;
 }
 
@@ -87,7 +89,7 @@ SYMBOL *digram_get(int v1, int v2) {
 int digram_delete(SYMBOL *digram) {
     // To be implemented.
     int v1 = digram -> value;
-    int v2 = (digram+1)->value;
+    int v2 = digram->next->value;
     int hash = DIGRAM_HASH(v1, v2);
     SYMBOL **start = digram_table + hash;
     SYMBOL **end = digram_table + MAX_DIGRAMS - 1;
@@ -105,8 +107,7 @@ int digram_delete(SYMBOL *digram) {
         // }
         if((*index) == digram){
             (*index) = TOMBSTONE;
-            return 0;
-        } else if((*index) == NULL){
+            debug("Deleting digram: (%d, %d)", v1, v2);
             return 0;
         }
     }
@@ -125,11 +126,11 @@ int digram_delete(SYMBOL *digram) {
         // }
         if((*index) == digram){
             (*index) = TOMBSTONE;
-            return 0;
-        } else if((*index) == NULL){
+            debug("Deleting digram: (%d, %d)", v1, v2);
             return 0;
         }
     }
+    debug("Not found!");
     return -1; // The digram does not exist
 }
 
@@ -145,7 +146,12 @@ int digram_delete(SYMBOL *digram) {
 int digram_put(SYMBOL *digram) {
     // To be implemented.
     int v1 = digram -> value;
-    int v2 = (digram+1)->value;
+    // int v2 = (digram+1)->value;
+    if(digram->next==NULL){
+        fprintf(stderr, "Given digram is not well-formed!");
+        abort();
+    }
+    int v2 = digram->next->value;
     int hash = DIGRAM_HASH(v1, v2);
     SYMBOL **start = digram_table + hash;
     SYMBOL **end = digram_table + MAX_DIGRAMS - 1;
@@ -153,10 +159,11 @@ int digram_put(SYMBOL *digram) {
     for(SYMBOL** index=start; index<=end; index++){
         if((*index)==NULL || (*index)==TOMBSTONE){
             *index = digram;
+            debug("Putting digram: (%d, %d)", v1, v2);
             return 0;
         } else {
             SYMBOL s1 = **index;
-            SYMBOL s2 = *(*index+1);
+            SYMBOL s2 = *((*index)->next);
             if(s1.value==v1 && s2.value==v2){ // The digram already exists
                 return 1;
             }
@@ -166,10 +173,11 @@ int digram_put(SYMBOL *digram) {
     for(SYMBOL** index=digram_table; index<=start-1; index++){
         if((*index)==NULL || (*index)==TOMBSTONE){
             *index = digram;
+            debug("Putting digram: (%d, %d)", v1, v2);
             return 0;
         } else {
             SYMBOL s1 = **index;
-            SYMBOL s2 = *(*index+1);
+            SYMBOL s2 = *((*index)->next);
             if(s1.value==v1 && s2.value==v2){
                 return 1;
             }

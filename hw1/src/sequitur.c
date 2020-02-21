@@ -71,8 +71,8 @@ static void join_symbols(SYMBOL *this, SYMBOL *next) {
  * @param next  The symbol that is to be inserted.
  */
 void insert_after(SYMBOL *this, SYMBOL *next) {
-    debug("Insert symbol <%lu> after %s%lu%s", SYMBOL_INDEX(next),
-	  IS_RULE_HEAD(this) ? "[" : "<", SYMBOL_INDEX(this), IS_RULE_HEAD(this) ? "]" : ">");
+    debug("Insert symbol <%lu> (%d) after %s%lu%s (%d)", SYMBOL_INDEX(next), next->value,
+	  IS_RULE_HEAD(this) ? "[" : "<", SYMBOL_INDEX(this), IS_RULE_HEAD(this) ? "]" : ">", this->value);
     join_symbols(next, this->next);
     join_symbols(this, next);
 }

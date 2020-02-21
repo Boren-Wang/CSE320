@@ -124,13 +124,14 @@ int compress(FILE *in, FILE *out, int bsize) {
     }
     while(c!=EOF){
         fputc(0x83, out); // SOB
+        // debug("Start of a block");
         count++;
         bnum = 0;
         init_symbols();
         init_rules();
         init_digram_hash();
         main_rule = new_rule(next_nonterminal_value++);
-        while(bnum!=bsize && c!=EOF){ // !!!
+        while(bnum<bsize && c!=EOF){ // !!!
             SYMBOL * last_symbol = main_rule->prev;
             SYMBOL *new_s = new_symbol(c, NULL);
             // printf("Last symbol is %c\n", last_symbol->value);
@@ -141,8 +142,6 @@ int compress(FILE *in, FILE *out, int bsize) {
                 insert_after(last_symbol, new_s);
                 check_digram(last_symbol);
             }
-            // insert_after(last_symbol, new_s);
-            // check_digram(last_symbol);
             bnum++;
             c = fgetc(in);
         }
@@ -177,6 +176,7 @@ int compress(FILE *in, FILE *out, int bsize) {
         // printf("Last symbol is %d", current_symbol->value);
         printUTF8(utf8, out, &count);
         fputc(0x84, out);
+        // debug("End of a block!");
         count++;
     }
     // printf("File ends!\n");
@@ -248,6 +248,7 @@ void print_array(){
     //         printf("%x\n", ((*(rule_map+i))->value)&0xffffffff);
     //     }
     // }
+    // printf("Printing!");
     // for(int i=0; i<num_symbols; i++){
     //     printf("%x\n", ((symbol_storage+i)->value) & 0xffffffff);
     // }
@@ -257,10 +258,33 @@ void print_array(){
     // printf("%x\n", ((*(rule_map+0x109))->next->value) & 0xffffffff);
     // printf("%x\n", ((*(rule_map+0x109))->next->next->value) & 0xffffffff);
     // SYMBOL* rule = main_rule;
-    // while(rule->nextr!=NULL){
+    // while(rule->nextr!=main_rule){
     //     printf("The rule is %x\n", (rule->value) & 0xffffffff);
     //     rule = rule->nextr;
     // }
+    // printf("The rule is %x\n", (rule->value) & 0xffffffff);
+    // SYMBOL *current_rule = main_rule;
+    // while(current_rule->nextr!=main_rule){
+    //     printf("Current rule is %d\n", (current_rule->value));
+    //     SYMBOL *current_symbol = current_rule;
+    //     while(current_symbol->next!=current_rule){
+    //         int utf8 = value_to_UTF8(current_symbol->value);
+    //         printf("Current symbol is %d", current_symbol->value);
+    //         current_symbol = current_symbol->next;
+    //     }
+    //     int utf8 = value_to_UTF8(current_symbol->value);
+    //     printf("Last symbol is %d", current_symbol->value);
+    //     current_rule = current_rule->nextr;
+    // }
+    // printf("Last rule is %d\n", current_rule->value);
+    // SYMBOL *current_symbol = current_rule;
+    // while(current_symbol->next!=current_rule){
+    //     int utf8 = value_to_UTF8(current_symbol->value);
+    //     printf("Current symbol is %d", current_symbol->value);
+    //     current_symbol = current_symbol->next;
+    // }
+    // int utf8 = value_to_UTF8(current_symbol->value);
+    // printf("Last symbol is %d", current_symbol->value);
 }
 
 /**
