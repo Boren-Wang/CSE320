@@ -18,10 +18,6 @@
 
 int main(int argc, char **argv)
 {
-    // for(int i=1; i<argc; i++){
-    //     char *s =  argv[i];
-    //     printf("%s\n", s);
-    // }
     // printf("%zu\n", sizeof(int));
     int ret;
     if(validargs(argc, argv))
@@ -31,13 +27,13 @@ int main(int argc, char **argv)
         USAGE(*argv, EXIT_SUCCESS);
     if(global_options == 0x00000004){
         int count = decompress(stdin, stdout);
-        // printf("This count is %d\n", count);
+        printf("This count is %d\n", count);
     }
     if((global_options & 0x2) == 2){
         // printf("Enter compress block!\n");
         int bszie = ((global_options >> 16) & 0xffff) * 1024;
         int count = compress(stdin, stdout, bszie);
-        // printf("This count is %d\n", count);
+        printf("This count is %d\n", count);
     }
 
     return EXIT_SUCCESS;

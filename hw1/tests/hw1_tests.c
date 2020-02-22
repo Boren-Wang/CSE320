@@ -67,6 +67,17 @@ Test(basecode_tests_suite, help_system_test) {
 		 return_code);
 }
 
+Test(basecode_tests_suite, valid_UTF8_test) {
+    int byte=0xbf;
+    int ret = valid_UTF8(byte);
+    int exp_ret = 1;
+    cr_assert_eq(ret, exp_ret, "Invalid return for valid_UTF8. Got: %d | Expected: %d", ret, exp_ret);
+    byte = 0xff;
+    ret = valid_UTF8(byte);
+    exp_ret = 0;
+    cr_assert_eq(ret, exp_ret, "Invalid return for valid_UTF8. Got: %d | Expected: %d", ret, exp_ret);
+}
+
 Test(basecode_tests_suite, UTF8_to_value_test) {
     int bytes = 0xc480;
     int bytec = 2;
