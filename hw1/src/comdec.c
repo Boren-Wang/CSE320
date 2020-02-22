@@ -333,44 +333,44 @@ int decompress(FILE *in, FILE *out) {
                     int byte2 = fgetc(in);
                     if(byte2==EOF){ return EOF;}
                     if(valid_UTF8(byte2)==0) {
-                        fprintf(stderr, "Read in invalid utf8 char!");
+                        // fprintf(stderr, "Read in invalid utf8 char!");
                         return EOF;
                     }
                     // bytec = 2;
                     // printf("Bytes is %x\n", ((byte1<<8)+byte2) & 0xffff);
                     v = UTF8_to_value((byte1<<8)+byte2, 2);
-                } else if(((byte1 & 0xf0) >> 4) == 0xe){ // three bytes
+                } else if((byte1 & 0xf0) == 0xe0){ // three bytes
                     int byte2 = fgetc(in);
                     if(byte2==EOF){ return EOF;}
                     if(valid_UTF8(byte2)==0) {
-                        fprintf(stderr, "Read in invalid utf8 char!");
+                        // fprintf(stderr, "Read in invalid utf8 char!");
                         return EOF;
                     }
                     int byte3 = fgetc(in);
                     if(byte3==EOF){ return EOF;}
                     if(valid_UTF8(byte3)==0) {
-                        fprintf(stderr, "Read in invalid utf8 char!");
+                        // fprintf(stderr, "Read in invalid utf8 char!");
                         return EOF;
                     }
                     // bytec = 3;
                     v = UTF8_to_value((byte1<<16)+(byte2<<8)+byte3, 3);
-                } else if(((byte1 & 0xf0) >> 4) == 0xf){ // four bytes
+                } else if((byte1 & 0xf8) == 0xf0){ // four bytes
                     int byte2 = fgetc(in);
                     if(byte2==EOF){ return EOF;}
                     if(valid_UTF8(byte2)==0) {
-                        fprintf(stderr, "Read in invalid utf8 char!");
+                        // fprintf(stderr, "Read in invalid utf8 char!");
                         return EOF;
                     }
                     int byte3 = fgetc(in);
                     if(byte3==EOF){ return EOF;}
                     if(valid_UTF8(byte3)==0) {
-                        fprintf(stderr, "Read in invalid utf8 char!");
+                        // fprintf(stderr, "Read in invalid utf8 char!");
                         return EOF;
                     }
                     int byte4 = fgetc(in);
                     if(byte4==EOF){ return EOF;}
                     if(valid_UTF8(byte4)==0) {
-                        fprintf(stderr, "Read in invalid utf8 char!");
+                        // fprintf(stderr, "Read in invalid utf8 char!");
                         return EOF;
                     }
                     // bytec = 4;
@@ -395,45 +395,45 @@ int decompress(FILE *in, FILE *out) {
                         int byte2 = fgetc(in);
                         if(byte2==EOF){ return EOF;}
                         if(valid_UTF8(byte2)==0) {
-                            fprintf(stderr, "Read in invalid utf8 char!");
+                            // fprintf(stderr, "Read in invalid utf8 char!");
                             return EOF;
                         }
                         // bytes = (byte1<<8)+byte2;
                         // bytec = 2;
                         v = UTF8_to_value((byte1<<8)+byte2, 2);
-                    } else if((byte1 & 0xf0) >> 4 == 0xe){ // three bytes
+                    } else if((byte1 & 0xf0) == 0xe0){ // three bytes
                         int byte2 = fgetc(in);
                         if(byte2==EOF){ return EOF;}
                         if(valid_UTF8(byte2)==0) {
-                            fprintf(stderr, "Read in invalid utf8 char!");
+                            // fprintf(stderr, "Read in invalid utf8 char!");
                             return EOF;
                         }
                         int byte3 = fgetc(in);
                         if(byte3==EOF){ return EOF;}
                         if(valid_UTF8(byte3)==0) {
-                            fprintf(stderr, "Read in invalid utf8 char!");
+                            // fprintf(stderr, "Read in invalid utf8 char!");
                             return EOF;
                         }
                         // bytes = (byte1<<16)+(byte2<<8)+byte3;
                         // bytec = 3;
                         v = UTF8_to_value((byte1<<16)+(byte2<<8)+byte3, 3);
-                    } else if((byte1 & 0xf0) >> 4 == 0xf){ // four bytes
+                    } else if((byte1 & 0xf8) == 0xf0){ // four bytes
                         int byte2 = fgetc(in);
                         if(byte2==EOF){ return EOF;}
                         if(valid_UTF8(byte2)==0) {
-                            fprintf(stderr, "Read in invalid utf8 char!");
+                            // fprintf(stderr, "Read in invalid utf8 char!");
                             return EOF;
                         }
                         int byte3 = fgetc(in);
                         if(byte3==EOF){ return EOF;}
                         if(valid_UTF8(byte3)==0) {
-                            fprintf(stderr, "Read in invalid utf8 char!");
+                            // fprintf(stderr, "Read in invalid utf8 char!");
                             return EOF;
                         }
                         int byte4 = fgetc(in);
                         if(byte4==EOF){ return EOF;}
                         if(valid_UTF8(byte4)==0) {
-                            fprintf(stderr, "Read in invalid utf8 char!");
+                            // fprintf(stderr, "Read in invalid utf8 char!");
                             return EOF;
                         }
                         // bytes = (byte1<<24)+(byte2<<16)+(byte3<<8)+byte4;
