@@ -1,4 +1,4 @@
-/* 
+/*
    This is the customizations file.  It changes our ideas of
    how to read directories.
 */

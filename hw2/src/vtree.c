@@ -97,7 +97,8 @@ struct RD_list {
 };
 #endif
 
-
+static void get_data(char*, int);
+static int	is_directory(char*);
 
 int		indent = 0,		/* current indent */
 		depth = 9999,		/* max depth */
@@ -162,7 +163,7 @@ int	last_subdir = FALSE;	/* the visual display */
 
 
 
-down(subdir)
+void down(subdir)
 char	*subdir;
 {
 OPEN	*dp;			/* stream from a directory */
@@ -447,7 +448,7 @@ char	*path;
 
 /* Is the specified path a directory ? */
 
-int	is_directory(path)
+static int	is_directory(path)
 char           *path;
 {
 
@@ -472,9 +473,9 @@ char           *path;
   * directory, go down into it, and get the data from all files inside.
   */
 
-get_data(path,cont)
-char           *path;
-int		cont;
+static void get_data(path,cont)
+char* path;
+int cont;
 {
 /* struct	stat	stb; */
 int		i;
