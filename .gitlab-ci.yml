@@ -1,8 +1,8 @@
 image: hwrunner:latest
 variables:
     GIT_SSL_NO_VERIFY: "true"
-    EXEC: sequitur
-    HW_DIR: hw1
+    EXEC: vtree
+    HW_DIR: hw2
 before_script:
     - make clean all -C ${HW_DIR}
 stages:

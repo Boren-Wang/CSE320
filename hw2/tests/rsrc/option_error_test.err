@@ -1,0 +1,13 @@
+bin/vtree: option requires an argument -- 'h'
+bin/vtree: [ -d ] [ -h # ] [ -i ] [ -o ] [ -s ] [ -q ] [ -v ] [ -V ]
+	-d	count duplicate inodes
+	-f	floating column widths
+	-h #	height of tree to look at
+	-i	count inodes
+	-o	sort directories before processing
+	-s	include subdirectories not shown due to -h option
+	-t	totals at the end
+	-q	quick display, no counts
+	-v	visual display
+	-V	show current version
+		(2 Vs shows specified options)

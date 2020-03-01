@@ -1,0 +1,58 @@
+.TH VTREE 1 local
+.SH NAME
+vtree \- print a visual tree of a directory structure
+.SH SYNOPSIS
+.B vtree
+[ \-d ] [ \-f ] [ \-h # ] [ \-i ] [ \-o ] [ \-s ] [ \-q ] [ \-v ] [ \-V ] 
+.SH DESCRIPTION
+.IP 
+Vtree is a program which scans directories/filesystems and displays the structure on the
+standard output.   Normally it will ignore duplicate inodes.
+.IP "\-d "
+Instructs the program to include the duplicate inodes in the totals.
+.PP
+.IP "\-f "
+Specifies floating column widths.  The widths of each column will be as narrow
+as possible to conserve space.
+.PP
+.IP "\-h #"
+Specifies how many levels down to display.
+.PP
+.IP \-i 
+displays the number of inodes (excluding directories) in each directory 
+.PP
+.IP \-o
+causes vtree to sort the directories before processing.  It is only
+available for the memory-based version.  Use the "-V" option to find out
+what version you are running.
+.PP
+.IP \-s 
+Instructs the program to continue counting inodes and file sizes when it
+has exceeded the levels specified.
+.PP
+.IP \-t 
+Displays totals at the end of the report
+.PP
+.IP \-q
+Quick display.  No totals of any kind are kept.
+.PP
+.IP \-v
+Visual display.  Normally the program displays one directory on a line,
+indenting lines to indicate subdirectories.  The visual display builds
+a tree on the screen showing the actual directory structure.  This method
+of display excludes any totals other than the final totals.
+.PP
+.IP \-V
+Shows current version.  Specifying 2 Vs (-VV) will also show all options in
+force.
+.SH AUTHOR
+Jonathan B. Bayer
+.PP
+Intelligent Software Products, Inc.
+.PP
+Rockville Centre, NY   11570
+.SH ACKNOWLEDGMENTS
+The program uses the directory routines written and released to the
+public domain by Doug Gwyn.
+The program is originally based on a program called AGEF written by
+David S. Hayes.
