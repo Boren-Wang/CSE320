@@ -6,10 +6,11 @@
 #define NAMELEN	512		/* max size of a full pathname */
 
 #ifdef LINUX
-#   include     <sys/dir.h>
+#   include     <dirent.h>
 #   define  OPEN    DIR
-#   define  READ    struct direct
+#   define  READ    struct dirent
 #   define  NAME(x) ((x).d_name)
+#   define  INO(x)  ((x).d_ino)
 #endif
 
 #ifdef BSD
