@@ -5,6 +5,13 @@
 
 #define NAMELEN	512		/* max size of a full pathname */
 
+#ifdef LINUX
+#   include     <sys/dir.h>
+#   define  OPEN    DIR
+#   define  READ    struct direct
+#   define  NAME(x) ((x).d_name)
+#endif
+
 #ifdef BSD
 #	include		<sys/dir.h>
 #	define	OPEN	DIR
@@ -41,6 +48,6 @@
 
 #endif
 
-#if !(defined(BSD) || !defined(SYS_V) || !defined(SYS_III) || !defined(SCO_XENIX))
+#if !(defined(LINUX) || defined(BSD) || !defined(SYS_V) || !defined(SYS_III) || !defined(SCO_XENIX))
 "This is an Error"
 #endif

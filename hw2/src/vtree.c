@@ -97,8 +97,9 @@ struct RD_list {
 };
 #endif
 
-static void get_data(char*, int);
+static int	chk_4_dir(char*);
 static int	is_directory(char*);
+static void get_data(char*, int);
 
 int		indent = 0,		/* current indent */
 		depth = 9999,		/* max depth */
@@ -436,7 +437,7 @@ READ		tmp_entry;
 
 
 
-int	chk_4_dir(path)
+static int	chk_4_dir(path)
 char	*path;
 {
 	if (is_directory(path)) return TRUE;
