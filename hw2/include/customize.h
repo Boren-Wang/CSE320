@@ -7,10 +7,10 @@
 
 #ifdef LINUX
 #   include     <dirent.h>
-#   define  OPEN    DIR
-#   define  READ    struct dirent
-#   define  NAME(x) ((x).d_name)
-#   define  INO(x)  ((x).d_ino)
+#   define  OPEN    DIR // directory stream
+#   define  READ    struct dirent // current directory
+#   define  NAME(x) ((x).d_name) // file name
+#   define  INO(x)  ((x).d_ino)  // file serial number
 #endif
 
 #ifdef BSD

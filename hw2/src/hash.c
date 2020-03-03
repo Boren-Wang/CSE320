@@ -16,12 +16,14 @@
 
 #include <stdio.h>
 #include <sys/types.h>
+#include <string.h>
+#include <stdlib.h>
 #include "hash.h"
 
 static struct htable *tables[TABLES];
-extern char *malloc();		/* added 6/17/88 */
-extern char *realloc();		/* added 6/17/88 */
-extern char *calloc();		/* added 6/17/88 */
+// extern char *malloc();		/* added 6/17/88 */
+// extern char *realloc();		/* added 6/17/88 */
+// extern char *calloc();		/* added 6/17/88 */
 
 /* These are for statistical use later on. */
 static int      hs_tables = 0,	/* number of tables allocated */

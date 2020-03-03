@@ -91,9 +91,9 @@
 
 #ifdef	MEMORY_BASED
 struct RD_list {
-	READ		entry;
-	struct RD_list	*fptr;
-	struct RD_list	*bptr;
+	READ		entry; // struct dirent
+	struct RD_list	*fptr; // forward
+	struct RD_list	*bptr; // backward
 };
 #endif
 
@@ -139,11 +139,10 @@ char            topdir[NAMELEN];	/* our starting directory */
 ** Find the last field of a string.
 */
 char *lastfield(p,c)
-char *p;	/* Null-terminated string to scan */
-int   c;	/* Separator char, usually '/' */
+	char *p;	/* Null-terminated string to scan */
+	int   c;	/* Separator char, usually '/' */
 {
-char *r;
-
+	char *r;
 	r = p;
 	while (*p)			/* Find the last field of the name */
 		if (*p++ == c)
@@ -282,8 +281,10 @@ READ		tmp_entry;
 			memcpy(&tmp_RD->entry, file, sizeof(tmp_entry));
 			tmp_RD->bptr = head;
 			tmp_RD->fptr = NULL;
-			if (head == NULL) head = tmp_RD;
-				else tail->fptr = tmp_RD;
+			if (head == NULL) {
+				head = tmp_RD;
+			}
+			else tail->fptr = tmp_RD;
 			tail = tmp_RD;
 		}
 	}
@@ -438,7 +439,7 @@ READ		tmp_entry;
 
 
 static int	chk_4_dir(path)
-char	*path;
+	char	*path;
 {
 	if (is_directory(path)) return TRUE;
 	else return FALSE;
@@ -450,17 +451,16 @@ char	*path;
 /* Is the specified path a directory ? */
 
 static int	is_directory(path)
-char           *path;
+	char           *path;
 {
-
-#ifdef LSTAT
-	if (sw_follow_links)
-		stat(path, &stb);	/* follows symbolic links */
-	else
-		lstat(path, &stb);	/* doesn't follow symbolic links */
-#else
-	stat(path, &stb);
-#endif
+	#ifdef LSTAT
+		if (sw_follow_links)
+			stat(path, &stb);	/* follows symbolic links */
+		else
+			lstat(path, &stb);	/* doesn't follow symbolic links */
+	#else
+		stat(path, &stb);
+	#endif
 
 	if ((stb.st_mode & S_IFMT) == S_IFDIR)
 		return TRUE;
@@ -475,11 +475,11 @@ char           *path;
   */
 
 static void get_data(path,cont)
-char* path;
-int cont;
+	char* path;
+	int cont;
 {
-/* struct	stat	stb; */
-int		i;
+	/* struct	stat	stb; */
+	int		i;
 
 	if (cont) {
 		if (is_directory(path))

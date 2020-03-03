@@ -22,3 +22,4 @@ struct htable {
 #define NEW	1		/* inode has been added to hash */
 
 int h_enter(dev_t, ino_t);
+void h_stats();
