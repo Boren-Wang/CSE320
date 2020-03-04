@@ -176,7 +176,7 @@ int	i, x;
 struct	stat	stb;
 
 #ifdef	MEMORY_BASED
-struct RD_list	*head, *tail, *tmp_RD, *tmp1_RD;		/* head and tail of directory list */
+struct RD_list	*head=NULL, *tail=NULL, *tmp_RD=NULL, *tmp1_RD=NULL;		/* head and tail of directory list */
 struct RD_list	sz;
 READ		tmp_entry;
 #endif
@@ -277,7 +277,7 @@ READ		tmp_entry;
  		    ( strcmp(NAME(*file), "..") != SAME &&
 		     strcmp(NAME(*file), ".") != SAME &&
 		     chk_4_dir(NAME(*file)) ) ) {
-			tmp_RD = (struct RD_list *) malloc(sizeof(struct RD_list *));
+			tmp_RD = (struct RD_list *) malloc(sizeof(struct RD_list));
 			memcpy(&tmp_RD->entry, file, sizeof(tmp_entry));
 			tmp_RD->bptr = head;
 			tmp_RD->fptr = NULL;
@@ -320,7 +320,6 @@ READ		tmp_entry;
 			file = &tmp_RD->entry;
 			tmp_RD = tmp_RD->fptr;
 #else
-
 		for (file = readdir(dp); file != NULL; file = readdir(dp)) {
 #endif
 			if (strcmp(NAME(*file), "..") != SAME)

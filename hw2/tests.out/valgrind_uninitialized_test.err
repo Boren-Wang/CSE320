@@ -1,68 +1,56 @@
-==10316== Memcheck, a memory error detector
-==10316== Copyright (C) 2002-2017, and GNU GPL'd, by Julian Seward et al.
-==10316== Using Valgrind-3.13.0 and LibVEX; rerun with -h for copyright info
-==10316== Command: bin/vtree -q tests/rsrc/test_tree
-==10316== 
-==10316== Invalid write of size 8
-==10316==    at 0x4C367E3: memmove (in /usr/lib/valgrind/vgpreload_memcheck-amd64-linux.so)
-==10316==    by 0x109436: down (in /home/student/borwang/hw2/bin/vtree)
-==10316==    by 0x109B8B: get_data (in /home/student/borwang/hw2/bin/vtree)
-==10316==    by 0x10A11C: vtree_main (in /home/student/borwang/hw2/bin/vtree)
-==10316==    by 0x10A1DE: main (in /home/student/borwang/hw2/bin/vtree)
-==10316==  Address 0x52360f8 is 0 bytes after a block of size 8 alloc'd
-==10316==    at 0x4C2FB0F: malloc (in /usr/lib/valgrind/vgpreload_memcheck-amd64-linux.so)
-==10316==    by 0x109411: down (in /home/student/borwang/hw2/bin/vtree)
-==10316==    by 0x109B8B: get_data (in /home/student/borwang/hw2/bin/vtree)
-==10316==    by 0x10A11C: vtree_main (in /home/student/borwang/hw2/bin/vtree)
-==10316==    by 0x10A1DE: main (in /home/student/borwang/hw2/bin/vtree)
-==10316== 
-
-valgrind: m_mallocfree.c:307 (get_bszB_as_is): Assertion 'bszB_lo == bszB_hi' failed.
-valgrind: Heap block lo/hi size mismatch: lo = 80, hi = 288230574492221464.
-This is probably caused by your program erroneously writing past the
-end of a heap block and corrupting heap metadata.  If you fix any
-invalid writes reported by Memcheck, this assertion failure will
-probably go away.  Please try that before reporting this as a bug.
-
-
-host stacktrace:
-==10316==    at 0x580441BA: ??? (in /usr/lib/valgrind/memcheck-amd64-linux)
-==10316==    by 0x580442D4: ??? (in /usr/lib/valgrind/memcheck-amd64-linux)
-==10316==    by 0x58044459: ??? (in /usr/lib/valgrind/memcheck-amd64-linux)
-==10316==    by 0x58052FC0: ??? (in /usr/lib/valgrind/memcheck-amd64-linux)
-==10316==    by 0x5803CECA: ??? (in /usr/lib/valgrind/memcheck-amd64-linux)
-==10316==    by 0x5803B5D3: ??? (in /usr/lib/valgrind/memcheck-amd64-linux)
-==10316==    by 0x5803FC9D: ??? (in /usr/lib/valgrind/memcheck-amd64-linux)
-==10316==    by 0x5803A8CB: ??? (in /usr/lib/valgrind/memcheck-amd64-linux)
-==10316==    by 0x1002D54165: ???
-==10316==    by 0x1002CA9F2F: ???
-==10316==    by 0x1C0F: ???
-==10316==    by 0x100200836F: ???
-==10316==    by 0x1002CA9F17: ???
-==10316==    by 0x1002CA9F2F: ???
-==10316==    by 0x11082: ???
-==10316==    by 0x1002D540BF: ???
-==10316==    by 0x15608: ???
-
-sched status:
-  running_tid=1
-
-Thread 1: status = VgTs_Runnable (lwpid 10316)
-==10316==    at 0x109445: down (in /home/student/borwang/hw2/bin/vtree)
-==10316==    by 0x109B8B: get_data (in /home/student/borwang/hw2/bin/vtree)
-==10316==    by 0x10A11C: vtree_main (in /home/student/borwang/hw2/bin/vtree)
-==10316==    by 0x10A1DE: main (in /home/student/borwang/hw2/bin/vtree)
-
-
-Note: see also the FAQ in the source distribution.
-It contains workarounds to several common problems.
-In particular, if Valgrind aborted or crashed after
-identifying problems in your program, there's a good chance
-that fixing those problems will prevent Valgrind aborting or
-crashing, especially if it happened in m_mallocfree.c.
-
-If that doesn't help, please report this bug to: www.valgrind.org
-
-In the bug report, send all the above text, the valgrind
-version, and what OS and version you are using.  Thanks.
-
+==14405== Memcheck, a memory error detector
+==14405== Copyright (C) 2002-2017, and GNU GPL'd, by Julian Seward et al.
+==14405== Using Valgrind-3.13.0 and LibVEX; rerun with -h for copyright info
+==14405== Command: bin/vtree -q tests/rsrc/test_tree
+==14405== 
+==14405== Invalid read of size 8
+==14405==    at 0x109928: down (vtree.c:406)
+==14405==    by 0x109BB7: get_data (vtree.c:485)
+==14405==    by 0x109848: down (vtree.c:383)
+==14405==    by 0x109BB7: get_data (vtree.c:485)
+==14405==    by 0x10A148: vtree_main (vtree.c:612)
+==14405==    by 0x10A20A: main (main.c:10)
+==14405==  Address 0x523e3e8 is 280 bytes inside a block of size 296 free'd
+==14405==    at 0x4C30D3B: free (in /usr/lib/valgrind/vgpreload_memcheck-amd64-linux.so)
+==14405==    by 0x109920: down (vtree.c:405)
+==14405==    by 0x109BB7: get_data (vtree.c:485)
+==14405==    by 0x109848: down (vtree.c:383)
+==14405==    by 0x109BB7: get_data (vtree.c:485)
+==14405==    by 0x10A148: vtree_main (vtree.c:612)
+==14405==    by 0x10A20A: main (main.c:10)
+==14405==  Block was alloc'd at
+==14405==    at 0x4C2FB0F: malloc (in /usr/lib/valgrind/vgpreload_memcheck-amd64-linux.so)
+==14405==    by 0x10943D: down (vtree.c:280)
+==14405==    by 0x109BB7: get_data (vtree.c:485)
+==14405==    by 0x109848: down (vtree.c:383)
+==14405==    by 0x109BB7: get_data (vtree.c:485)
+==14405==    by 0x10A148: vtree_main (vtree.c:612)
+==14405==    by 0x10A20A: main (main.c:10)
+==14405== 
+==14405== Invalid read of size 8
+==14405==    at 0x109928: down (vtree.c:406)
+==14405==    by 0x109BB7: get_data (vtree.c:485)
+==14405==    by 0x10A148: vtree_main (vtree.c:612)
+==14405==    by 0x10A20A: main (main.c:10)
+==14405==  Address 0x5236208 is 280 bytes inside a block of size 296 free'd
+==14405==    at 0x4C30D3B: free (in /usr/lib/valgrind/vgpreload_memcheck-amd64-linux.so)
+==14405==    by 0x109920: down (vtree.c:405)
+==14405==    by 0x109BB7: get_data (vtree.c:485)
+==14405==    by 0x10A148: vtree_main (vtree.c:612)
+==14405==    by 0x10A20A: main (main.c:10)
+==14405==  Block was alloc'd at
+==14405==    at 0x4C2FB0F: malloc (in /usr/lib/valgrind/vgpreload_memcheck-amd64-linux.so)
+==14405==    by 0x10943D: down (vtree.c:280)
+==14405==    by 0x109BB7: get_data (vtree.c:485)
+==14405==    by 0x10A148: vtree_main (vtree.c:612)
+==14405==    by 0x10A20A: main (main.c:10)
+==14405== 
+==14405== 
+==14405== HEAP SUMMARY:
+==14405==     in use at exit: 196,896 bytes in 6 blocks
+==14405==   total heap usage: 12 allocs, 6 frees, 202,472 bytes allocated
+==14405== 
+==14405== For a detailed leak analysis, rerun with: --leak-check=full
+==14405== 
+==14405== For counts of detected and suppressed errors, rerun with: -v
+==14405== ERROR SUMMARY: 5 errors from 2 contexts (suppressed: 0 from 0)
