@@ -66,6 +66,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <getopt.h>
 
 #ifdef	SYS_III
 	#define	rewinddir(fp)	rewind(fp)
@@ -122,7 +123,6 @@ struct	stat	stb;			/* Normally not a good idea, but */
 extern char    *optarg;			/* from getopt(3) */
 extern int      optind,
                 opterr;
-
 
 char           *Program;		/* our name */
 short           sw_follow_links = 1;	/* follow symbolic links */
@@ -515,11 +515,23 @@ int	i,
 int	option;
 int	user_file_list_supplied = 0;
 
+int option_index = 0;
+struct option long_options[] = {
+	{"duplicates", no_argument, NULL, 'd' },
+	{"floating-column-widths", no_argument, NULL, 'f' },
+	{"height", required_argument, NULL, 'h' },
+	{"inodes", no_argument, NULL, 'i' },
+	{"sort-directories", no_argument, NULL, 'o' },
+	{"totals", no_argument, NULL, 't' },
+	{"quick-display", no_argument, NULL, 'q' },
+	{"visual-display", no_argument, NULL, 'v' },
+	{"version", no_argument, NULL, 'V' }
+};
+
 	Program = *argv;		/* save our name for error messages */
-
     /* Pick up options from command line */
-
-	while ((option = getopt(argc, argv, "dfh:iostqvV")) != EOF) {
+	while ((option = getopt_long(argc, argv, "dfh:iostqvV", long_options, &option_index)) != EOF) {
+	// while ((option = getopt(argc, argv, "dfh:iostqvV")) != EOF) {
 		switch (option) {
 			case 'f':	floating = TRUE; break;
 			case 'h':	depth = atoi(optarg);
