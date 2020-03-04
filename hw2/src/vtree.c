@@ -164,7 +164,7 @@ int	last_subdir = FALSE;	/* the visual display */
 
 
 void down(subdir)
-char	*subdir;
+	char	*subdir;
 {
 OPEN	*dp;			/* stream from a directory */
 OPEN	*opendir ();
@@ -184,8 +184,7 @@ READ		tmp_entry;
 	if ( (cur_depth == depth) && (!sum) )
 		return;
 
-/* display the tree */
-
+	/* display the tree */
 	if (cur_depth < depth) {
 		if (visual) {
 			if (!indented) {
@@ -217,7 +216,6 @@ READ		tmp_entry;
 	** truncated.  Any subdirs displayed for the current subdir will be
 	** appended to the second line.  This keeps the columns in order
 	*/
-
 #ifndef	ONEPERLINE
 			if (  ( strlen(subdir) > MAX_COL_WIDTH - 3 && !floating )	) {
 #else
@@ -251,14 +249,12 @@ READ		tmp_entry;
 		else printf("%*s%s",indent," ",subdir);
 	}
 
-/* open subdirectory */
-
+	/* open subdirectory */
 	if ((dp = opendir(subdir)) == NULL) {
 		printf(" - can't read %s\n", subdir);
 		indented = FALSE;
 		return;
 	}
-
 	cur_depth++;
 	indent+=3;
 
@@ -289,9 +285,10 @@ READ		tmp_entry;
 		}
 	}
 
-				/* screwy, inefficient, bubble sort	*/
-				/* but it works				*/
+	/* screwy, inefficient, bubble sort	*/
+	/* but it works				*/
 	if (sort) {
+		// printf("Sorting!\n");
 		while (tmp_RD) {
 			tmp1_RD = tmp_RD->fptr;
 			while (tmp1_RD) {
@@ -310,10 +307,7 @@ READ		tmp_entry;
 #endif
 
 	if ( (!quick) && (!visual) ) {
-
-		/* accumulate total sizes and inodes in current directory */
-
-
+	/* accumulate total sizes and inodes in current directory */
 #ifdef	MEMORY_BASED
 		tmp_RD = head;
 		while (tmp_RD) {
@@ -323,7 +317,7 @@ READ		tmp_entry;
 		for (file = readdir(dp); file != NULL; file = readdir(dp)) {
 #endif
 			if (strcmp(NAME(*file), "..") != SAME)
-				get_data(NAME(*file),FALSE);
+				get_data(NAME(*file), FALSE);
 		}
 
 		if (cur_depth<depth) {
@@ -468,35 +462,47 @@ static int	is_directory(path)
 
 
 
- /*
-  * Get the aged data on a file whose name is given.  If the file is a
-  * directory, go down into it, and get the data from all files inside.
-  */
-
+/*
+ * Get the aged data on a file whose name is given.  If the file is a
+ * directory, go down into it, and get the data from all files inside.
+ * cont: whether to call down()
+ */
 static void get_data(path,cont)
 	char* path;
 	int cont;
 {
 	/* struct	stat	stb; */
 	int		i;
-
+	// printf("Path is %s\n", path);
 	if (cont) {
 		if (is_directory(path))
 			down(path);
 	}
 	else {
-		if (is_directory(path)) return;
+		if (is_directory(path)) {
+			// if ( !(h_enter(stb.st_dev, stb.st_ino) == OLD) && (!dup_inodes) ){
+			// 	inodes++;
+			// }
+			if (strcmp(path, ".") == SAME){
+				inodes++;
+				// sizes+= 4;
+				sizes+= K(stb.st_size);
+				// sizes+= K(512*stb.st_blocks);
+				// printf("%ld\n", K(512*stb.st_blocks));
+			}
+			// inodes++;
+			return;
+		}
 
-		    /* Don't do it again if we've already done it once. */
-
+		/* Don't do it again if we've already done it once. */
 		if ( (h_enter(stb.st_dev, stb.st_ino) == OLD) && (!dup_inodes) )
 			return;
 		inodes++;
+		// sizes+= stb.st_size;
 		sizes+= K(stb.st_size);
+		// sizes+= K(512*stb.st_blocks);
 	}
 } /* get_data */
-
-
 
 int vtree_main(argc, argv)
 int	argc;

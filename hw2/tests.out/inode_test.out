@@ -1,6 +1,6 @@
- tests/rsrc/test_tree   4 : 0
-   S   1 : 0
-      a   1 : 4
-      c   1 : 12
-      b   1 : 8
-      d   1 : 16
+ tests/rsrc/test_tree   5 : 4
+   S   2 : 4
+      a   2 : 8
+      c   2 : 16
+      b   2 : 12
+      d   2 : 20
