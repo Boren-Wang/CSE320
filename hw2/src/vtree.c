@@ -396,8 +396,9 @@ READ		tmp_entry;
 				/* free the allocated memory */
 	tmp_RD = head;
 	while (tmp_RD) {
+		tmp1_RD = tmp_RD->fptr;
 		free(tmp_RD);
-		tmp_RD = tmp_RD->fptr;
+		tmp_RD = tmp1_RD;
 	}
 #endif
 
@@ -425,7 +426,7 @@ READ		tmp_entry;
 	cur_depth--;
 
 	chdir(cwd);			/* go back where we were */
-
+	closedir(dp);
 
 } /* down */
 
@@ -522,7 +523,7 @@ int	user_file_list_supplied = 0;
 		switch (option) {
 			case 'f':	floating = TRUE; break;
 			case 'h':	depth = atoi(optarg);
-					while (*optarg) {
+					while (*optarg) { // check if all the char in the optarg string is digit
 						if (!isdigit(*optarg)) {
 							err = TRUE;
 							break;
