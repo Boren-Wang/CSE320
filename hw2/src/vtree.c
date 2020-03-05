@@ -534,8 +534,8 @@ struct option long_options[] = {
 
 	Program = *argv;		/* save our name for error messages */
     /* Pick up options from command line */
-	while ((option = getopt_long(argc, argv, "dfh:iostqvV", long_options, &option_index)) != EOF) {
-	// while ((option = getopt(argc, argv, "dfh:iostqvV")) != EOF) {
+	while ((option = getopt_long(argc, argv, "dfh:iostqvVl", long_options, &option_index)) != EOF) {
+	// while ((option = getopt(argc, argv, "dfh:iostqvVl")) != EOF) {
 		switch (option) {
 			case 'f':	floating = TRUE; break;
 			case 'h':	depth = atoi(optarg);
@@ -572,13 +572,28 @@ struct option long_options[] = {
 
 			#ifdef LSTAT
 			case 'l':
+					sw_follow_links = FALSE;
 					break;
 			#endif
 
 			default:	err = TRUE;
 		}
 		if (err) {
-			fprintf(stderr,"%s: [ -d ] [ -h # ] [ -i ] [ -o ] [ -s ] [ -q ] [ -v ] [ -V ]\n",Program);
+			fprintf(stderr,"%s: [ -d ] [ -h # ] [ -i ] ",Program);
+
+			#ifdef MEMORY_BASED
+			fprintf(stderr, " [ -o ] ");
+			#endif
+
+			fprintf(stderr,"[ -s ] [ -q ] [ -v ] [ -V ]");
+
+			#ifdef LSTAT
+			fprintf(stderr, " [ -l ] ");
+			#endif
+
+			fprintf(stderr, "\n");
+
+			// fprintf(stderr,"%s: [ -d ] [ -h # ] [ -i ] [ -o ] [ -s ] [ -q ] [ -v ] [ -V ]\n",Program);
 			fprintf(stderr,"	-d	count duplicate inodes\n");
 			fprintf(stderr,"	-f	floating column widths\n");
 			fprintf(stderr,"	-h #	height of tree to look at\n");
@@ -617,6 +632,7 @@ struct option long_options[] = {
 			if (quick) printf("Quick display only\n");
 			if (visual) printf("Visual tree\n");
 			if (sort) printf("Sort directories before processing\n");
+			if (!sw_follow_links) printf("Do not follow symbolic links\n");
 		}
 	}
 
