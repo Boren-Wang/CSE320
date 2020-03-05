@@ -289,10 +289,12 @@ READ		tmp_entry;
 	/* but it works				*/
 	if (sort) {
 		// printf("Sorting!\n");
+		tmp_RD=head;
 		while (tmp_RD) {
 			tmp1_RD = tmp_RD->fptr;
 			while (tmp1_RD) {
-				if (NAME(tmp_RD->entry) > NAME(tmp1_RD->entry)) {
+				// if (NAME(tmp_RD->entry) > NAME(tmp1_RD->entry)) {
+				if(strcmp(NAME(tmp_RD->entry), NAME(tmp1_RD->entry))>0){
 					/* swap the two */
 					memcpy(&tmp_entry, &tmp_RD->entry, sizeof(tmp_entry));
 					memcpy(&tmp_RD->entry, &tmp1_RD->entry, sizeof(tmp_entry));
@@ -487,8 +489,8 @@ static void get_data(path,cont)
 			if (strcmp(path, ".") == SAME){
 				inodes++;
 				// sizes+= 4;
-				sizes+= K(stb.st_size);
-				// sizes+= K(512*stb.st_blocks);
+				// sizes+= K(stb.st_size);
+				sizes+= stb.st_blocks/2;
 				// printf("%ld\n", K(512*stb.st_blocks));
 			}
 			// inodes++;
@@ -500,8 +502,8 @@ static void get_data(path,cont)
 			return;
 		inodes++;
 		// sizes+= stb.st_size;
-		sizes+= K(stb.st_size);
-		// sizes+= K(512*stb.st_blocks);
+		// sizes+= K(stb.st_size);
+		sizes+= stb.st_blocks/2;
 	}
 } /* get_data */
 
