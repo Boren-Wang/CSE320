@@ -525,7 +525,9 @@ struct option long_options[] = {
 	{"totals", no_argument, NULL, 't' },
 	{"quick-display", no_argument, NULL, 'q' },
 	{"visual-display", no_argument, NULL, 'v' },
-	{"version", no_argument, NULL, 'V' }
+	{"version", no_argument, NULL, 'V' },
+	{"no-follow-symlinks", no_argument, NULL, 'l'},
+	{0, 0, 0, 0 }
 };
 
 	Program = *argv;		/* save our name for error messages */
@@ -547,7 +549,11 @@ struct option long_options[] = {
 					break;
 			case 'i':	cnt_inodes = TRUE;
 					break;
+
+			#ifdef MEMORY_BASED
 			case 'o':	sort = TRUE; break;
+			#endif
+
 			case 's':	sum = TRUE;
 					break;
 			case 't':	sw_summary = TRUE;
@@ -561,6 +567,12 @@ struct option long_options[] = {
 					break;
 			case 'V':	version++;
 					break;
+
+			#ifdef LSTAT
+			case 'l':
+					break;
+			#endif
+
 			default:	err = TRUE;
 		}
 		if (err) {
@@ -569,12 +581,17 @@ struct option long_options[] = {
 			fprintf(stderr,"	-f	floating column widths\n");
 			fprintf(stderr,"	-h #	height of tree to look at\n");
 			fprintf(stderr,"	-i	count inodes\n");
+			#ifdef MEMORY_BASED
 			fprintf(stderr,"	-o	sort directories before processing\n");
+			#endif
 			fprintf(stderr,"	-s	include subdirectories not shown due to -h option\n");
 			fprintf(stderr,"	-t	totals at the end\n");
 			fprintf(stderr,"	-q	quick display, no counts\n");
 			fprintf(stderr,"	-v	visual display\n");
 			fprintf(stderr,"	-V	show current version\n");
+			#ifdef LSTAT
+			fprintf(stderr,"	-l	do not follow symbolic links\n");
+			#endif
 			fprintf(stderr,"		(2 Vs shows specified options)\n");
 			exit(-1);
 		}
