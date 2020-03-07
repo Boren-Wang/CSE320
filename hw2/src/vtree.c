@@ -56,6 +56,7 @@
 #include <stdio.h>
 #ifdef	BSD
 #include <strings.h>
+#include <string.h>
 #else
 #include <string.h>
 #endif
@@ -275,7 +276,7 @@ READ		tmp_entry;
 		     chk_4_dir(NAME(*file)) ) ) {
 			tmp_RD = (struct RD_list *) malloc(sizeof(struct RD_list));
 			memcpy(&tmp_RD->entry, file, sizeof(tmp_entry));
-			tmp_RD->bptr = tail;
+			tmp_RD->bptr = head;
 			tmp_RD->fptr = NULL;
 			if (head == NULL) {
 				head = tmp_RD;
@@ -458,9 +459,10 @@ static int	is_directory(path)
 		stat(path, &stb);
 	#endif
 
-	if ((stb.st_mode & S_IFMT) == S_IFDIR || S_ISLNK(stb.st_mode))
+	if ((stb.st_mode & S_IFMT) == S_IFDIR) {
+	// if ((stb.st_mode & S_IFMT) == S_IFDIR || S_ISLNK(stb.st_mode))
 		return TRUE;
-	else return FALSE;
+	} else return FALSE;
 } /* is_directory */
 
 
