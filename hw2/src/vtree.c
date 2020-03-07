@@ -275,7 +275,7 @@ READ		tmp_entry;
 		     chk_4_dir(NAME(*file)) ) ) {
 			tmp_RD = (struct RD_list *) malloc(sizeof(struct RD_list));
 			memcpy(&tmp_RD->entry, file, sizeof(tmp_entry));
-			tmp_RD->bptr = head;
+			tmp_RD->bptr = tail;
 			tmp_RD->fptr = NULL;
 			if (head == NULL) {
 				head = tmp_RD;
@@ -458,7 +458,7 @@ static int	is_directory(path)
 		stat(path, &stb);
 	#endif
 
-	if ((stb.st_mode & S_IFMT) == S_IFDIR)
+	if ((stb.st_mode & S_IFMT) == S_IFDIR || S_ISLNK(stb.st_mode))
 		return TRUE;
 	else return FALSE;
 } /* is_directory */
@@ -487,6 +487,7 @@ static void get_data(path,cont)
 			// 	inodes++;
 			// }
 			if (strcmp(path, ".") == SAME){
+				// printf("Dir path is %s.\n", path);
 				inodes++;
 				// sizes+= 4;
 				// sizes+= K(stb.st_size);
@@ -500,6 +501,7 @@ static void get_data(path,cont)
 		/* Don't do it again if we've already done it once. */
 		if ( (h_enter(stb.st_dev, stb.st_ino) == OLD) && (!dup_inodes) )
 			return;
+		// printf("File path is %s.\n", path);
 		inodes++;
 		// sizes+= stb.st_size;
 		// sizes+= K(stb.st_size);
@@ -632,7 +634,7 @@ struct option long_options[] = {
 			if (quick) printf("Quick display only\n");
 			if (visual) printf("Visual tree\n");
 			if (sort) printf("Sort directories before processing\n");
-			if (!sw_follow_links) printf("Do not follow symbolic links\n");
+			// if (!sw_follow_links) printf("Do not follow symbolic links\n");
 		}
 	}
 
@@ -671,7 +673,7 @@ struct option long_options[] = {
 
 	if (sw_summary) {
 		printf("\n\nTotal space used: %ld\n",total_sizes);
-		if (cnt_inodes) printf("Total inodes: %d\n",inodes);
+		if (cnt_inodes) printf("Total inodes: %d\n",total_inodes);
 	}
 
 #ifdef HSTATS
