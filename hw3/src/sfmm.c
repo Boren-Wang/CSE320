@@ -11,6 +11,7 @@
 
 int free_list(size_t size);
 sf_block* find_block(int size, int index);
+size_t getSize(sf_block* bp);
 
 void *sf_malloc(size_t size) {
     if(size==0){
@@ -23,13 +24,34 @@ void *sf_malloc(size_t size) {
     }
     int index = free_list(size);
     sf_block* bp = find_block(size, index);
-    if(bp==NULL){
+    if(bp==NULL){ // no large enough block found, grow the heap
 
     } else {
+        if(getSize(bp)-size<64){ // leave splinter, do not split
+            // modify the allocation status
+            bp->header = bp->header | THIS_BLOCK_ALLOCATED;
 
+        } else { // splitting
+            int lowersize = size;
+            int uppersize = getSize(bp)-size;
+            sf_block* upperblock = bp+lowersize/sizeof(sf_block); // the pointer to the upper block
+
+            // modify lower block
+            bp->header = bp->header | lowersize; // modify the size for the lower block
+            bp->header = bp->header | THIS_BLOCK_ALLOCATED; // modify the allocation status
+
+            // modify upper block
+            upperblock->header = uppersize; // set upper block size
+            upperblock->header = upperblock->header | PREV_BLOCK_ALLOCATED; // prev block is allocated
+            sf_block* nextblock = upperblock + uppersize/sizeof(sf_block); // the pointer to the next block after the upper block
+            nextblock->prev_footer = upperblock->header; // set the footer for the upper block
+
+            // add the upper block to a appropriate free list
+
+        }
+        return bp;
     }
 
-    return NULL;
 }
 
 int free_list(size_t size){
@@ -59,22 +81,26 @@ int free_list(size_t size){
 }
 
 sf_block* find_block(int size, int index){
-    for(index; index<NUM_FREE_LISTS; index++){
-        sf_block head = sf_free_list_heads[index];
+    for(int i=index; i<NUM_FREE_LISTS; i++){
+        sf_block head = sf_free_list_heads[i];
         if(head.body.links.prev==head.body.links.next){
             continue;
         } else {
-            sf_block cursor = head;
-            while(cursor.body.links.next!=&head){
-                cursor = *cursor.body.links.next;
-                size_t block_size = cursor.header & BLOCK_SIZE_MASK;
+            sf_block* cursor = &head;
+            while(cursor->body.links.next!=&head){
+                cursor = cursor->body.links.next;
+                size_t block_size = cursor->header & BLOCK_SIZE_MASK;
                 if(block_size>=size){
-                    return &cursor;
+                    return cursor;
                 }
             }
         }
     }
     return NULL;
+}
+
+size_t getSize(sf_block* bp){
+    return bp->header & BLOCK_SIZE_MASK;
 }
 
 void sf_free(void *pp) {
