@@ -6,12 +6,16 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <errno.h>
 #include "debug.h"
 #include "sfmm.h"
 
 int free_list(size_t size);
 sf_block* find_block(int size, int index);
+void addToFreelist(int index, sf_block* block);
 size_t getSize(sf_block* bp);
+sf_block* getWildernessBlock();
+void split(int size, sf_block* bp);
 
 void *sf_malloc(size_t size) {
     if(size==0){
@@ -25,33 +29,35 @@ void *sf_malloc(size_t size) {
     int index = free_list(size);
     sf_block* bp = find_block(size, index);
     if(bp==NULL){ // no large enough block found, grow the heap
-
-    } else {
-        if(getSize(bp)-size<64){ // leave splinter, do not split
-            // modify the allocation status
-            bp->header = bp->header | THIS_BLOCK_ALLOCATED;
-
-        } else { // splitting
-            int lowersize = size;
-            int uppersize = getSize(bp)-size;
-            sf_block* upperblock = bp+lowersize/sizeof(sf_block); // the pointer to the upper block
-
-            // modify lower block
-            bp->header = bp->header | lowersize; // modify the size for the lower block
-            bp->header = bp->header | THIS_BLOCK_ALLOCATED; // modify the allocation status
-
-            // modify upper block
-            upperblock->header = uppersize; // set upper block size
-            upperblock->header = upperblock->header | PREV_BLOCK_ALLOCATED; // prev block is allocated
-            sf_block* nextblock = upperblock + uppersize/sizeof(sf_block); // the pointer to the next block after the upper block
-            nextblock->prev_footer = upperblock->header; // set the footer for the upper block
-
-            // add the upper block to a appropriate free list
-
+        sf_block* wilderness = NULL;
+        while(1){
+            sf_block* new_page = sf_mem_grow();
+            if(new_page==NULL){
+                // perror("No memory");
+                sf_errno = ENOMEM;
+                return NULL;
+            }
+            wilderness = getWildernessBlock();
+            if(wilderness==NULL){ // first allocation
+                wilderness = new_page;
+                wilderness->header |= 3968;
+                // add the wilderness block to the last free list
+                addToFreelist(NUM_FREE_LISTS-1, wilderness);
+            } else {
+                wilderness->header |= 3968+(wilderness->header&BLOCK_SIZE_MASK);
+            }
+            // Do I need to set other bits and footer for the wilderness block?????
+            if( (wilderness->header&BLOCK_SIZE_MASK) > size ){ // the wilderness block is large enough
+                break;
+            } // if not large enough, continue growing the heap
         }
+        // at this point, we have a large enough wilderness block
+        split(size, wilderness);
+        return wilderness;
+    } else {
+        split(size, bp);
         return bp;
     }
-
 }
 
 int free_list(size_t size){
@@ -99,8 +105,50 @@ sf_block* find_block(int size, int index){
     return NULL;
 }
 
+void addToFreelist(int index, sf_block* block){
+    sf_block dummy_head = sf_free_list_heads[index];
+    sf_block* head = dummy_head.body.links.next;
+    dummy_head.body.links.next = block;
+    block->body.links.prev = &dummy_head;
+    head->body.links.prev = block;
+    block->body.links.next = head;
+}
+
 size_t getSize(sf_block* bp){
     return bp->header & BLOCK_SIZE_MASK;
+}
+
+sf_block* getWildernessBlock(){
+    if(sf_free_list_heads[NUM_FREE_LISTS-1].body.links.next!=&sf_free_list_heads[NUM_FREE_LISTS-1]){
+        return sf_free_list_heads[NUM_FREE_LISTS-1].body.links.next;
+    } else {
+        return NULL;
+    }
+}
+
+void split(int size, sf_block* bp){
+    if(getSize(bp)-size<64){ // leave splinter, do not split
+        // modify the allocation status
+        bp->header = bp->header | THIS_BLOCK_ALLOCATED;
+    } else { // splitting
+        int lowersize = size;
+        int uppersize = getSize(bp)-size;
+        sf_block* upperblock = bp+lowersize/sizeof(sf_block); // the pointer to the upper block
+
+        // modify lower block
+        bp->header = bp->header | lowersize; // modify the size for the lower block
+        bp->header = bp->header | THIS_BLOCK_ALLOCATED; // modify the allocation status
+
+        // modify upper block
+        upperblock->header = uppersize; // set upper block size
+        upperblock->header = upperblock->header | PREV_BLOCK_ALLOCATED; // prev block is allocated
+        sf_block* nextblock = upperblock + uppersize/sizeof(sf_block); // the pointer to the next block after the upper block
+        nextblock->prev_footer = upperblock->header; // set the footer for the upper block
+
+        // add the upper block to a appropriate free list
+        int index = free_list(uppersize); // could there be no large enough block for this?????
+        addToFreelist(index, upperblock);
+    }
 }
 
 void sf_free(void *pp) {
