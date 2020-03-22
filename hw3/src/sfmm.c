@@ -44,10 +44,10 @@ void *sf_malloc(size_t size) {
                 // add the wilderness block to the last free list
                 addToFreelist(NUM_FREE_LISTS-1, wilderness);
             } else {
-                wilderness->header |= 3968+(wilderness->header&BLOCK_SIZE_MASK);
+                wilderness->header |= 3968+getSize(wilderness);
             }
             // Do I need to set other bits and footer for the wilderness block?????
-            if( (wilderness->header&BLOCK_SIZE_MASK) > size ){ // the wilderness block is large enough
+            if( getSize(wilderness) > size ){ // the wilderness block is large enough
                 break;
             } // if not large enough, continue growing the heap
         }
@@ -151,8 +151,29 @@ void split(int size, sf_block* bp){
     }
 }
 
+int validPointer(void *p);
 void sf_free(void *pp) {
-    return;
+    if(validPointer(pp)){
+
+    } else {
+        abort();
+    }
+}
+
+int validPointer(void *pp){
+    unsigned long p = (unsigned long)pp;
+    sf_block block = *( (sf_block*)pp );
+    if(pp==NULL){
+        return 0;
+    }
+    if( p % 64 != 0 ){
+        return 0;
+    }
+    if( (block.header & THIS_BLOCK_ALLOCATED) == 0){ // if the block's allocated bit is 0 (free block)
+        return 0;
+    }
+
+    return 1;
 }
 
 void *sf_realloc(void *pp, size_t rsize) {
