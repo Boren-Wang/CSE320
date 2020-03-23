@@ -152,6 +152,10 @@ void split(int size, sf_block* bp){
 }
 
 int validPointer(void *p);
+sf_block* getNextBlock(sf_block* bp);
+sf_block* getPrevBlock(sf_block* bp);
+int prevBlockIsFree(sf_block* bp);
+
 void sf_free(void *pp) {
     if(validPointer(pp)){
 
@@ -160,7 +164,7 @@ void sf_free(void *pp) {
     }
 }
 
-int validPointer(void *pp){
+int validPointer(void *pp){ // need to test this function!!!
     unsigned long p = (unsigned long)pp;
     sf_block block = *( (sf_block*)pp );
     if(pp==NULL){
@@ -172,8 +176,38 @@ int validPointer(void *pp){
     if( (block.header & THIS_BLOCK_ALLOCATED) == 0){ // if the block's allocated bit is 0 (free block)
         return 0;
     }
-
+    if( (void*)( &(block.header) ) < (void*)( sf_mem_start() + 7*8/sizeof(sf_block) ) ){
+        return 0;
+    }
+    sf_block* next = getNextBlock(&block);
+    if( (void*)&(next->prev_footer) > (void*)sf_mem_end() ){
+        return 0;
+    }
+    // if( prevBlockIsFree(&block) && (block.prev_footer&THIS_BLOCK_ALLOCATED)!=0 ){
+    if( prevBlockIsFree(&block) && ( (getPrevBlock(&block)->header) & THIS_BLOCK_ALLOCATED)!=0 ){
+        return 0;
+    }
     return 1;
+}
+
+sf_block* getNextBlock(sf_block* bp){
+    int size = getSize(bp);
+    sf_block* next = bp+size/sizeof(sf_block);
+    return next;
+}
+
+sf_block* getPrevBlock(sf_block* bp){
+    int size = bp->prev_footer&BLOCK_SIZE_MASK;
+    sf_block* prev = bp-size/sizeof(sf_block);
+    return prev;
+}
+
+int prevBlockIsFree(sf_block* bp){
+    if( (bp->header & PREV_BLOCK_ALLOCATED)==0 ){ // free
+        return 1;
+    } else { // allocated
+        return 0;
+    }
 }
 
 void *sf_realloc(void *pp, size_t rsize) {
