@@ -11,11 +11,11 @@
 #include "sfmm.h"
 
 int free_list(size_t size);
-sf_block* find_block(int size, int index);
+sf_block* find_block(size_t size, int index);
 void addToFreelist(int index, sf_block* block);
 size_t getSize(sf_block* bp);
 sf_block* getWildernessBlock();
-void split(int size, sf_block* bp);
+void split(size_t size, sf_block* bp);
 
 void *sf_malloc(size_t size) {
     if(size==0){
@@ -86,7 +86,7 @@ int free_list(size_t size){
     }
 }
 
-sf_block* find_block(int size, int index){
+sf_block* find_block(size_t size, int index){
     for(int i=index; i<NUM_FREE_LISTS; i++){
         sf_block head = sf_free_list_heads[i];
         if(head.body.links.prev==head.body.links.next){
@@ -126,7 +126,7 @@ sf_block* getWildernessBlock(){
     }
 }
 
-void split(int size, sf_block* bp){
+void split(size_t size, sf_block* bp){
     if(getSize(bp)-size<64){ // leave splinter, do not split
         // modify the allocation status
         bp->header = bp->header | THIS_BLOCK_ALLOCATED;
@@ -155,10 +155,39 @@ int validPointer(void *p);
 sf_block* getNextBlock(sf_block* bp);
 sf_block* getPrevBlock(sf_block* bp);
 int prevBlockIsFree(sf_block* bp);
+int isFree(sf_block* bp);
+// int isLastNonWildernessBlock(sf_block* bp);
+int isWildernessBlock(sf_block* bp);
 
 void sf_free(void *pp) {
     if(validPointer(pp)){
-
+        // coalesce
+        sf_block* new = NULL;
+        if(prevBlockIsFree(pp) & isFree(getNextBlock(pp))){
+            size_t size = getSize(getPrevBlock(pp)) + getSize(pp) + getSize(getNextBlock(pp));
+            new = getPrevBlock(pp);
+            new->header |= size;
+            getNextBlock(new)->prev_footer = new->header;
+        } else if(prevBlockIsFree(pp)) {
+            size_t size = getSize(getPrevBlock(pp)) + getSize(pp);
+            new = getPrevBlock(pp);
+            new->header |= size;
+            getNextBlock(new)->prev_footer = new->header;
+        } else if(isFree(getNextBlock(pp))) {
+            size_t size = getSize(pp) + getSize(getNextBlock(pp));
+            new = pp;
+            new->header |= size;
+            getNextBlock(new)->prev_footer = new->header;
+        }
+        if(isWildernessBlock(new)){ // if the new block is the wilderness block
+            sf_free_list_heads[NUM_FREE_LISTS-1].body.links.next = new;
+            sf_free_list_heads[NUM_FREE_LISTS-1].body.links.prev = new;
+            new->body.links.next = &sf_free_list_heads[NUM_FREE_LISTS-1];
+            new->body.links.prev = &sf_free_list_heads[NUM_FREE_LISTS-1];
+        } else { // add the coalesced block to appropriate free list
+            int index = free_list(getSize(new));
+            addToFreelist(index, new);
+        }
     } else {
         abort();
     }
@@ -191,13 +220,13 @@ int validPointer(void *pp){ // need to test this function!!!
 }
 
 sf_block* getNextBlock(sf_block* bp){
-    int size = getSize(bp);
+    size_t size = getSize(bp);
     sf_block* next = bp+size/sizeof(sf_block);
     return next;
 }
 
 sf_block* getPrevBlock(sf_block* bp){
-    int size = bp->prev_footer&BLOCK_SIZE_MASK;
+    size_t size = bp->prev_footer&BLOCK_SIZE_MASK;
     sf_block* prev = bp-size/sizeof(sf_block);
     return prev;
 }
@@ -206,6 +235,30 @@ int prevBlockIsFree(sf_block* bp){
     if( (bp->header & PREV_BLOCK_ALLOCATED)==0 ){ // free
         return 1;
     } else { // allocated
+        return 0;
+    }
+}
+
+int isFree(sf_block* bp){
+    if( (bp->header & THIS_BLOCK_ALLOCATED) == 0 ){
+        return 1;
+    } else {
+        return 0;
+    }
+}
+
+// int isLastNonWildernessBlock(sf_block* bp){
+//     if( getNextBlock( getNextBlock(bp) ) == sf_mem_end() ){
+//         return 1;
+//     } else {
+//         return 0;
+//     }
+// }
+
+int isWildernessBlock(sf_block* bp){
+    if( getNextBlock(bp) == sf_mem_end() ){
+        return 1;
+    } else {
         return 0;
     }
 }
