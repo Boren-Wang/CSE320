@@ -17,7 +17,20 @@ size_t getSize(sf_block* bp);
 sf_block* getWildernessBlock();
 void split(size_t size, sf_block* bp);
 
+void initializeFreelists(){
+    for(int i=0; i<NUM_FREE_LISTS; i++){
+        // sf_block sentinel;
+        // sentinel.body.links.next = &sentinel;
+        // sentinel.body.links.prev = &sentinel;
+        // sf_free_list_heads[i] = sentinel;
+        sf_free_list_heads[i].body.links.next = &sf_free_list_heads[i];
+        sf_free_list_heads[i].body.links.prev = &sf_free_list_heads[i];
+    }
+}
+
 void *sf_malloc(size_t size) {
+    initializeFreelists();
+    // sf_show_free_lists();
     if(size==0){
         return NULL;
     }
@@ -25,6 +38,7 @@ void *sf_malloc(size_t size) {
     int remainder = size%64;
     if(remainder>0){
         size = (size/64)*64+64;
+        printf("The size is %lu", size);
     }
     int index = free_list(size);
     sf_block* bp = find_block(size, index);

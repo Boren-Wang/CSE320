@@ -4,7 +4,8 @@
 int main(int argc, char const *argv[]) {
     sf_mem_init();
 
-    double* ptr = sf_malloc(sizeof(double));
+    // double* ptr = sf_malloc(sizeof(double));
+    double* ptr = sf_malloc(10);
 
     // sf_show_blocks();
     // sf_show_free_lists();
@@ -12,7 +13,7 @@ int main(int argc, char const *argv[]) {
 
     *ptr = 320320320e-320;
 
-    printf("%f\n", *ptr);
+    // printf("%f\n", *ptr);
 
     // sf_free(ptr);
 
