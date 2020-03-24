@@ -35,7 +35,7 @@ void *sf_malloc(size_t size) {
         while(1){
             sf_block* new_page = sf_mem_grow();
             if(new_page==NULL){
-                printf("No memory");
+                printf("No memory\n");
                 sf_errno = ENOMEM;
                 return NULL;
             }
