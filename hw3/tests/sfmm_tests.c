@@ -3,6 +3,7 @@
 #include <signal.h>
 #include "debug.h"
 #include "sfmm.h"
+#include "myheader.h"
 
 void assert_free_block_count(size_t size, int count);
 void assert_free_list_block_count(size_t size, int count);

@@ -9,28 +9,10 @@
 #include <errno.h>
 #include "debug.h"
 #include "sfmm.h"
-
-int free_list(size_t size);
-sf_block* find_block(size_t size, int index);
-void addToFreelist(int index, sf_block* block);
-size_t getSize(sf_block* bp);
-sf_block* getWildernessBlock();
-void split(size_t size, sf_block* bp);
-
-void initializeFreelists(){
-    for(int i=0; i<NUM_FREE_LISTS; i++){
-        // sf_block sentinel;
-        // sentinel.body.links.next = &sentinel;
-        // sentinel.body.links.prev = &sentinel;
-        // sf_free_list_heads[i] = sentinel;
-        sf_free_list_heads[i].body.links.next = &sf_free_list_heads[i];
-        sf_free_list_heads[i].body.links.prev = &sf_free_list_heads[i];
-    }
-}
+#include "myheader.h"
 
 void *sf_malloc(size_t size) {
     initializeFreelists();
-    // sf_show_free_lists();
     if(size==0){
         return NULL;
     }
@@ -38,7 +20,7 @@ void *sf_malloc(size_t size) {
     int remainder = size%64;
     if(remainder>0){
         size = (size/64)*64+64;
-        printf("The size is %lu", size);
+        // printf("The size is %lu", size);
     }
     int index = free_list(size);
     sf_block* bp = find_block(size, index);
@@ -53,14 +35,35 @@ void *sf_malloc(size_t size) {
             }
             wilderness = getWildernessBlock();
             if(wilderness==NULL){ // first allocation
-                wilderness = new_page;
-                wilderness->header |= 3968;
+                // initialize prologue
+                // printf("New page is %p\n", new_page);
+                // printf("Mem_start is %p\n", sf_mem_start());
+                // sf_block* prologue = new_page+(56/sizeof(sf_block)); // this is wrong!!!
+                // printf("size of sf_block is %lu\n", sizeof(sf_block));
+                sf_block* prologue = (sf_block*)( ((char*)new_page)+48 );
+                // printf("Prologue is %p\n", prologue);
+                // printf("Header is %lu\n", prologue->header);
+                setSize(prologue, 64);
+                setAlloc(prologue, 1);
+                setPrevAlloc(prologue, 1);
+                // printf("Header is now %lu\n", prologue->header);
+                wilderness = getNextBlock(prologue);
+                wilderness->prev_footer = prologue->header;
+                setSize(wilderness, 3968);
+                setAlloc(wilderness, 1);
+                setPrevAlloc(wilderness, 1);
+                sf_block* epilogue = getNextBlock(wilderness);
+                epilogue->prev_footer = wilderness->header;
+                setSize(epilogue, 0);
+                setAlloc(epilogue, 1);
+                setPrevAlloc(epilogue, 0);
+                sf_show_heap();
                 // add the wilderness block to the last free list
                 addToFreelist(NUM_FREE_LISTS-1, wilderness);
+                sf_show_free_lists();
             } else {
-                wilderness->header |= 3968+getSize(wilderness);
+                setSize(wilderness, 4096+getSize(wilderness));
             }
-            // Do I need to set other bits and footer for the wilderness block?????
             if( getSize(wilderness) > size ){ // the wilderness block is large enough
                 break;
             } // if not large enough, continue growing the heap
@@ -71,6 +74,13 @@ void *sf_malloc(size_t size) {
     } else {
         split(size, bp);
         return bp;
+    }
+}
+
+void initializeFreelists(){
+    for(int i=0; i<NUM_FREE_LISTS; i++){
+        sf_free_list_heads[i].body.links.next = &sf_free_list_heads[i];
+        sf_free_list_heads[i].body.links.prev = &sf_free_list_heads[i];
     }
 }
 
@@ -123,13 +133,58 @@ void addToFreelist(int index, sf_block* block){
     sf_block dummy_head = sf_free_list_heads[index];
     sf_block* head = dummy_head.body.links.next;
     dummy_head.body.links.next = block;
-    block->body.links.prev = &dummy_head;
     head->body.links.prev = block;
     block->body.links.next = head;
+    block->body.links.prev = &dummy_head;
 }
 
 size_t getSize(sf_block* bp){
     return bp->header & BLOCK_SIZE_MASK;
+}
+
+int isAlloc(sf_block* bp){
+    if( (bp->header&THIS_BLOCK_ALLOCATED)!=0 ){
+        return 1;
+    } else {
+        return 0;
+    }
+}
+
+int isPrevAlloc(sf_block* bp){
+    if( (bp->header&PREV_BLOCK_ALLOCATED)!=0 ){
+        return 1;
+    } else {
+        return 0;
+    }
+}
+
+void setSize(sf_block* bp, size_t size){
+    sf_header header = bp->header;
+    size_t allocation = header & THIS_BLOCK_ALLOCATED;
+    size_t prev_allocation = header & PREV_BLOCK_ALLOCATED;
+    bp->header = size + allocation + prev_allocation;
+}
+
+void setAlloc(sf_block* bp, size_t alloc){ // 1: allocated, 0: freed
+    if(alloc){
+        alloc = 0x1;
+    } else {
+        alloc = 0x0;
+    }
+    size_t prevAlloc = bp->header & PREV_BLOCK_ALLOCATED;
+    size_t size = bp->header & BLOCK_SIZE_MASK;
+    bp->header = size | alloc | prevAlloc;
+}
+
+void setPrevAlloc(sf_block* bp, size_t prevAlloc){ // 1: allocated, 0: freed
+    if(prevAlloc){
+        prevAlloc = 0x2;
+    } else {
+        prevAlloc = 0x0;
+    }
+    size_t alloc = bp->header & THIS_BLOCK_ALLOCATED;
+    size_t size = bp->header & BLOCK_SIZE_MASK;
+    bp->header = size | alloc | prevAlloc;
 }
 
 sf_block* getWildernessBlock(){
@@ -143,7 +198,8 @@ sf_block* getWildernessBlock(){
 void split(size_t size, sf_block* bp){
     if(getSize(bp)-size<64){ // leave splinter, do not split
         // modify the allocation status
-        bp->header = bp->header | THIS_BLOCK_ALLOCATED;
+        // bp->header = bp->header | THIS_BLOCK_ALLOCATED;
+        setAlloc(bp, 1);
     } else { // splitting
         int lowersize = size;
         int uppersize = getSize(bp)-size;
@@ -164,14 +220,6 @@ void split(size_t size, sf_block* bp){
         addToFreelist(index, upperblock);
     }
 }
-
-int validPointer(void *p);
-sf_block* getNextBlock(sf_block* bp);
-sf_block* getPrevBlock(sf_block* bp);
-int prevBlockIsFree(sf_block* bp);
-int isFree(sf_block* bp);
-// int isLastNonWildernessBlock(sf_block* bp);
-int isWildernessBlock(sf_block* bp);
 
 void sf_free(void *pp) {
     if(validPointer(pp)){
