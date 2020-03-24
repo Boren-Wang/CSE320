@@ -11,8 +11,14 @@
 #include "sfmm.h"
 #include "myheader.h"
 
+static int freelistsInitialized = 0;
+static int heapInitialized = 0;
+
 void *sf_malloc(size_t size) {
-    initializeFreelists();
+    if(freelistsInitialized==0){
+        initializeFreelists();
+        freelistsInitialized = 1;
+    }
     if(size==0){
         return NULL;
     }
@@ -29,12 +35,12 @@ void *sf_malloc(size_t size) {
         while(1){
             sf_block* new_page = sf_mem_grow();
             if(new_page==NULL){
-                // perror("No memory");
+                printf("No memory");
                 sf_errno = ENOMEM;
                 return NULL;
             }
-            wilderness = getWildernessBlock();
-            if(wilderness==NULL){ // first allocation
+            if(heapInitialized==0){ // first allocation
+                // printf("Initializing\n");
                 // initialize prologue
                 // printf("New page is %p\n", new_page);
                 // printf("Mem_start is %p\n", sf_mem_start());
@@ -59,19 +65,41 @@ void *sf_malloc(size_t size) {
                 setPrevAlloc(epilogue, 0);
                 // add the wilderness block to the last free list
                 addToFreelist(NUM_FREE_LISTS-1, wilderness);
+                heapInitialized = 1;
             } else {
-                setSize(wilderness, 4096+getSize(wilderness));
+                // move epilogue
+                sf_block* old_epilogue = (sf_block*)(((char*)new_page)-16);
+                sf_block* new_epilogue = (sf_block*)(((char*)sf_mem_end())-16);
+                *new_epilogue = *old_epilogue;
+                // coalesce
+                wilderness = getWildernessBlock();
+                // sf_show_block(wilderness);
+                // printf("\n");
+                if(wilderness==NULL){
+                    // printf("New wilderness block\n");
+                    wilderness = (sf_block*)(((char*)new_page)-16);
+                    setSize(wilderness, 4096);
+                    setAlloc(wilderness, 0);
+                    setPrevAlloc(wilderness, 1);
+                    getNextBlock(wilderness)->prev_footer = wilderness->header;
+                    addToFreelist(NUM_FREE_LISTS-1, wilderness);
+                } else {
+                    setSize(wilderness, 4096+getSize(wilderness));
+                    getNextBlock(wilderness)->prev_footer = wilderness->header;
+                    printf("The size of the new wilderness block is: %lu\n", getSize(wilderness));
+                    printf("Size is %lu\n", size);
+                }
             }
-            if( getSize(wilderness) > size ){ // the wilderness block is large enough
+            if( getSize(wilderness) >= size ){ // the wilderness block is large enough
                 break;
             } // if not large enough, continue growing the heap
         }
         // at this point, we have a large enough wilderness block
         split(size, wilderness);
-        return wilderness;
+        return wilderness->body.payload;
     } else {
         split(size, bp);
-        return bp;
+        return bp->body.payload;
     }
 }
 
@@ -110,12 +138,12 @@ int free_list(size_t size){
 
 sf_block* find_block(size_t size, int index){
     for(int i=index; i<NUM_FREE_LISTS; i++){
-        sf_block head = sf_free_list_heads[i];
-        if(head.body.links.prev==head.body.links.next){
+        sf_block* head = &sf_free_list_heads[i];
+        if(head->body.links.prev==head->body.links.next && head->body.links.prev==head){
             continue;
         } else {
-            sf_block* cursor = &head;
-            while(cursor->body.links.next!=&head){
+            sf_block* cursor = head;
+            while(cursor->body.links.next!=head){
                 cursor = cursor->body.links.next;
                 size_t block_size = cursor->header & BLOCK_SIZE_MASK;
                 if(block_size>=size){
@@ -214,11 +242,25 @@ sf_block* getWildernessBlock(){
     }
 }
 
+int isWildernessBlock(sf_block* bp){
+    // sf_show_block(bp);
+    // printf("\n");
+    // sf_show_block(getNextBlock(bp));
+    // printf("\n");
+    // sf_show_block(sf_mem_end());
+    // printf("\n");
+    if( (void*)getNextBlock(bp) == (void*)(((char*)sf_mem_end())-16) ){
+        return 1;
+    } else {
+        return 0;
+    }
+}
+
 void split(size_t size, sf_block* bp){
     if(getSize(bp)-size<64){ // leave splinter, do not split
         // modify the allocation status
-        // bp->header = bp->header | THIS_BLOCK_ALLOCATED;
         setAlloc(bp, 1);
+        deleteFromFreelist(bp);
     } else { // splitting
         size_t lowersize = size;
         size_t uppersize = getSize(bp)-size;
@@ -329,28 +371,6 @@ int prevBlockIsFree(sf_block* bp){
 
 int isFree(sf_block* bp){
     if( (bp->header & THIS_BLOCK_ALLOCATED) == 0 ){
-        return 1;
-    } else {
-        return 0;
-    }
-}
-
-// int isLastNonWildernessBlock(sf_block* bp){
-//     if( getNextBlock( getNextBlock(bp) ) == sf_mem_end() ){
-//         return 1;
-//     } else {
-//         return 0;
-//     }
-// }
-
-int isWildernessBlock(sf_block* bp){
-    // sf_show_block(bp);
-    // printf("\n");
-    // sf_show_block(getNextBlock(bp));
-    // printf("\n");
-    // sf_show_block(sf_mem_end());
-    // printf("\n");
-    if( (void*)getNextBlock(bp) == (void*)(((char*)sf_mem_end())-16) ){
         return 1;
     } else {
         return 0;

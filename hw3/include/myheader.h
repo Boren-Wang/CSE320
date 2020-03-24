@@ -13,7 +13,9 @@ void setSize(sf_block* bp, size_t size);
 void setAlloc(sf_block* bp, size_t alloc);
 void setPrevAlloc(sf_block* bp, size_t prevAlloc);
 
+int isWildernessBlock(sf_block* bp);
 sf_block* getWildernessBlock();
+
 void split(size_t size, sf_block* bp);
 
 int validPointer(void *p);
@@ -21,4 +23,3 @@ sf_block* getNextBlock(sf_block* bp);
 sf_block* getPrevBlock(sf_block* bp);
 int prevBlockIsFree(sf_block* bp);
 int isFree(sf_block* bp);
-int isWildernessBlock(sf_block* bp);
