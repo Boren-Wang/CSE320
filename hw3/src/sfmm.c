@@ -50,17 +50,15 @@ void *sf_malloc(size_t size) {
                 wilderness = getNextBlock(prologue);
                 wilderness->prev_footer = prologue->header;
                 setSize(wilderness, 3968);
-                setAlloc(wilderness, 1);
+                setAlloc(wilderness, 0);
                 setPrevAlloc(wilderness, 1);
                 sf_block* epilogue = getNextBlock(wilderness);
                 epilogue->prev_footer = wilderness->header;
                 setSize(epilogue, 0);
                 setAlloc(epilogue, 1);
                 setPrevAlloc(epilogue, 0);
-                sf_show_heap();
                 // add the wilderness block to the last free list
                 addToFreelist(NUM_FREE_LISTS-1, wilderness);
-                sf_show_free_lists();
             } else {
                 setSize(wilderness, 4096+getSize(wilderness));
             }
@@ -130,12 +128,33 @@ sf_block* find_block(size_t size, int index){
 }
 
 void addToFreelist(int index, sf_block* block){
-    sf_block dummy_head = sf_free_list_heads[index];
-    sf_block* head = dummy_head.body.links.next;
-    dummy_head.body.links.next = block;
+    sf_block* dummy_head = &sf_free_list_heads[index];
+    sf_block* head = dummy_head->body.links.next;
+    dummy_head->body.links.next = block;
     head->body.links.prev = block;
     block->body.links.next = head;
-    block->body.links.prev = &dummy_head;
+    block->body.links.prev = dummy_head;
+}
+
+void deleteFromFreelist(sf_block* block){
+    for(int i=0; i<NUM_FREE_LISTS; i++){
+        sf_block* head = &sf_free_list_heads[i];
+        if(head->body.links.prev==head->body.links.next && head->body.links.prev==head){
+            // printf("Free list %d is empty\n", i);
+            continue;
+        } else {
+            sf_block* cursor = head;
+            while(cursor->body.links.next!=head){
+                cursor = cursor->body.links.next;
+                if(cursor == block){
+                    sf_block* prev = cursor->body.links.prev;
+                    sf_block* next = cursor->body.links.next;
+                    prev->body.links.next = next;
+                    next->body.links.prev = prev;
+                }
+            }
+        }
+    }
 }
 
 size_t getSize(sf_block* bp){
@@ -201,23 +220,30 @@ void split(size_t size, sf_block* bp){
         // bp->header = bp->header | THIS_BLOCK_ALLOCATED;
         setAlloc(bp, 1);
     } else { // splitting
-        int lowersize = size;
-        int uppersize = getSize(bp)-size;
-        sf_block* upperblock = bp+lowersize/sizeof(sf_block); // the pointer to the upper block
+        size_t lowersize = size;
+        size_t uppersize = getSize(bp)-size;
+        sf_block* upperblock = (sf_block*)( ((char*)bp)+lowersize ); // the pointer to the upper block
 
         // modify lower block
-        bp->header = bp->header | lowersize; // modify the size for the lower block
-        bp->header = bp->header | THIS_BLOCK_ALLOCATED; // modify the allocation status
+        setSize(bp, lowersize); // modify the size for the lower block
+        setAlloc(bp, 1); // modify the allocation status
+
+        // delete lower block from its free list
+        deleteFromFreelist(bp);
 
         // modify upper block
-        upperblock->header = uppersize; // set upper block size
-        upperblock->header = upperblock->header | PREV_BLOCK_ALLOCATED; // prev block is allocated
-        sf_block* nextblock = upperblock + uppersize/sizeof(sf_block); // the pointer to the next block after the upper block
+        setSize(upperblock, uppersize); // set upper block size
+        setPrevAlloc(upperblock, 1); // prev block is allocated
+        sf_block* nextblock = getNextBlock(upperblock); // the pointer to the next block after the upper block
         nextblock->prev_footer = upperblock->header; // set the footer for the upper block
 
         // add the upper block to a appropriate free list
-        int index = free_list(uppersize); // could there be no large enough block for this?????
-        addToFreelist(index, upperblock);
+        if(isWildernessBlock(upperblock)){
+            addToFreelist(NUM_FREE_LISTS-1, upperblock);
+        } else {
+            int index = free_list(uppersize);
+            addToFreelist(index, upperblock);
+        }
     }
 }
 
@@ -318,7 +344,13 @@ int isFree(sf_block* bp){
 // }
 
 int isWildernessBlock(sf_block* bp){
-    if( getNextBlock(bp) == sf_mem_end() ){
+    // sf_show_block(bp);
+    // printf("\n");
+    // sf_show_block(getNextBlock(bp));
+    // printf("\n");
+    // sf_show_block(sf_mem_end());
+    // printf("\n");
+    if( (void*)getNextBlock(bp) == (void*)(((char*)sf_mem_end())-16) ){
         return 1;
     } else {
         return 0;
