@@ -460,6 +460,42 @@ void *sf_memalign(size_t size, size_t align) {
     }
     size_t bsize = size+align+64; // and header size and padding size, which will be added during malloc
     void* pp = sf_malloc(bsize);
+    if(pp==NULL){
+        return NULL;
+    }
+    unsigned long p = (unsigned long) pp;
     sf_block* block = (sf_block*)(((char*)pp)-16);
-    return NULL;
+    if( (p & (align-1)) == 0 ){ // payload address is aligned with align
+        // post-splitting and freeing
+        sf_block* newBlock = (sf_block*)(((char*)pp)-16);
+        size_t newBlockSize = size+8;
+        int remainder = newBlockSize%64;
+        if(remainder>0){
+            newBlockSize = (newBlockSize/64)*64+64;
+            // printf("The size is %lu", size);
+        }
+        split(newBlockSize, newBlock);
+        return pp;
+    } else { // if not aligned
+        size_t oldBlockSize = 0;
+        while( (p & (align-1)) != 0 ){
+            p+=1;
+            oldBlockSize+=1;
+        }
+        pp = (void*)p;
+        // pre-splitting and freeing
+        setSize(block, oldBlockSize);
+        sf_free(block->body.payload);
+
+        // post-splitting and freeing
+        sf_block* newBlock = (sf_block*)(((char*)pp)-16);
+        size_t newBlockSize = size+8;
+        int remainder = newBlockSize%64;
+        if(remainder>0){
+            newBlockSize = (newBlockSize/64)*64+64;
+            // printf("The size is %lu", size);
+        }
+        split(newBlockSize, newBlock);
+        return pp;
+    }
 }
