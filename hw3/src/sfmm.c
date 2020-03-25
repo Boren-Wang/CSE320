@@ -393,9 +393,73 @@ int isFree(sf_block* bp){
 }
 
 void *sf_realloc(void *pp, size_t rsize) {
-    return NULL;
+    if(validPointer(pp)){
+        if(rsize==0){
+            sf_free(pp);
+            return NULL;
+        }
+        size_t rbsize = rsize+8; // The size of the new block for the reallocation
+        int remainder = rbsize%64;
+        if(remainder>0){
+            rbsize = (rbsize/64)*64+64;
+            // printf("The size is %lu", size);
+        }
+        sf_block* bp = (sf_block*)( ((char*)pp)-16 );
+        size_t bsize = getSize(bp); // The size of the original block
+        size_t size = getSize(bp)-8; // The size of the payload of the original block
+        if(rbsize>bsize){ // if reallocating to a larger size
+            void* new = sf_malloc(rsize);
+            if(new==NULL){
+                return NULL;
+            }
+            memcpy(new, pp, size);
+            sf_free(pp);
+            return new;
+        } else if (rbsize<bsize) { // if reallocating to a smaller size
+            if( (bsize-rbsize)<64 ){ // do not split the block because of splinter
+                return pp;
+            } else { // split the block
+                size_t lowersize = rbsize;
+                size_t uppersize = bsize - rbsize;
+                sf_block* upperblock = (sf_block*)( ((char*)bp)+lowersize ); // the pointer to the upper block
+
+                // modify lower block
+                setSize(bp, lowersize); // modify the size for the lower block
+                setAlloc(bp, 1); // modify the allocation status
+
+                // modify upper block
+                setSize(upperblock, uppersize); // set upper block size
+                setPrevAlloc(upperblock, 1); // prev block is allocated
+                // setAlloc(upperblock, 0); // upper block is free
+                // sf_block* nextblock = getNextBlock(upperblock); // the pointer to the next block after the upper block
+                // nextblock->prev_footer = upperblock->header; // set the footer for the upper block
+
+                // // add the upper block to a appropriate free list
+                // if(isWildernessBlock(upperblock)){
+                //     addToFreelist(NUM_FREE_LISTS-1, upperblock);
+                // } else {
+                //     int index = free_list(uppersize);
+                //     addToFreelist(index, upperblock);
+                // }
+                setAlloc(upperblock, 1); // set upperblock's allocation bit to be 1 so that can use sf_free to free it
+                sf_free(upperblock->body.payload);
+                return pp;
+            }
+        } else { // if reallocating to the same size
+            return pp;
+        }
+    } else { // invalid pointer
+        abort();
+    }
 }
 
 void *sf_memalign(size_t size, size_t align) {
+    if( align<64 || (align & (align-1))!=0 ){
+        sf_errno = EINVAL;
+        return NULL;
+    }
+    size_t bsize = size+align+64; // and header size and padding size, which will be added during malloc
+    void* pp = sf_malloc(bsize);
+    sf_block* block = (sf_block*)(((char*)pp)-16);
     return NULL;
 }

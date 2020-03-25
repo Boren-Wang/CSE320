@@ -40,22 +40,28 @@ int main(int argc, char const *argv[]) {
     // *ptr = 320320320e-320;
 
     // printf("%f\n", *ptr);
-    int* ip1 = sf_malloc(10);
-    int* ip2 = sf_malloc(50);
-    int* ip3 = sf_malloc(100);
-    sf_show_heap();
+    // int* ip1 = sf_malloc(10);
+    // int* ip2 = sf_malloc(50);
+    // int* ip3 = sf_malloc(100);
+    // sf_show_heap();
     // printf("%p%p%p", ip1, ip2, ip3);
     // sf_free(ptr);
-    sf_free(ip2);
+    // sf_free(ip2);
+    // sf_show_heap();
+    // sf_free(ip1);
+    // sf_show_heap();
+    // sf_free(ip3);
+
+    void *x = sf_malloc(sizeof(double) * 8);
     sf_show_heap();
-    sf_free(ip1);
+    void *y = sf_realloc(x, sizeof(int));
     sf_show_heap();
-    sf_free(ip3);
+    printf("%p%p", x, y);
 
 
     // sf_show_blocks();
     // sf_show_free_lists();
-    sf_show_heap();
+    // sf_show_heap();
 
     sf_mem_fini();
 
