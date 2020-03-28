@@ -52,17 +52,23 @@ int main(int argc, char const *argv[]) {
     // sf_show_heap();
     // sf_free(ip3);
 
-    void *x = sf_malloc(sizeof(double) * 8);
-    sf_show_heap();
-    void *y = sf_realloc(x, sizeof(int));
-    sf_show_heap();
-    printf("%p%p", x, y);
+    // void *x = sf_malloc(sizeof(double) * 8);
+    // sf_show_heap();
+    // void *y = sf_realloc(x, sizeof(int));
+    // sf_show_heap();
+    // printf("%p%p", x, y);
 
 
     // sf_show_blocks();
     // sf_show_free_lists();
     // sf_show_heap();
 
+    // sf_malloc(sizeof(int));
+    // sf_show_heap();
+    // sf_memalign(1000, 4096);
+    sf_malloc(sizeof(int));
+    sf_memalign(3820, 4096);
+    sf_show_heap();
     sf_mem_fini();
 
     return EXIT_SUCCESS;

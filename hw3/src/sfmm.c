@@ -256,7 +256,7 @@ int isWildernessBlock(sf_block* bp){
     }
 }
 
-void split(size_t size, sf_block* bp){
+void split(size_t size, sf_block* bp){ // after splitting, the lower block is allocated, and the upper block is free
     if(getSize(bp)-size<64){ // leave splinter, do not split
         // modify the allocation status
         setAlloc(bp, 1);
@@ -464,10 +464,14 @@ void *sf_memalign(size_t size, size_t align) {
         return NULL;
     }
     unsigned long p = (unsigned long) pp;
-    sf_block* block = (sf_block*)(((char*)pp)-16);
+    sf_block* block = (sf_block*)(((char*)pp)-16); // block returned by malloc
+    size_t blockSize = getSize(block);
+    sf_block* newBlock;
+    // sf_show_heap();
     if( (p & (align-1)) == 0 ){ // payload address is aligned with align
+        printf("Payload address is aligned with align\n");
         // post-splitting and freeing
-        sf_block* newBlock = (sf_block*)(((char*)pp)-16);
+        newBlock = (sf_block*)(((char*)pp)-16); // block to be return by this memalign
         size_t newBlockSize = size+8;
         int remainder = newBlockSize%64;
         if(remainder>0){
@@ -475,27 +479,46 @@ void *sf_memalign(size_t size, size_t align) {
             // printf("The size is %lu", size);
         }
         split(newBlockSize, newBlock);
-        return pp;
     } else { // if not aligned
-        size_t oldBlockSize = 0;
+        printf("not aligned\n");
+        size_t preBlockSize = 0;
         while( (p & (align-1)) != 0 ){
             p+=1;
-            oldBlockSize+=1;
+            preBlockSize+=1;
         }
         pp = (void*)p;
+
+        newBlock = (sf_block*)(((char*)pp)-16); // this is the block after pre-splitting
+        size_t newBlockSize = blockSize-preBlockSize; // this is the size for the block after pre-splitting
+        setSize(newBlock, newBlockSize);
+        setPrevAlloc(newBlock, 1);
+        setAlloc(newBlock, 1); // to prevent from being coalesced
+
         // pre-splitting and freeing
-        setSize(block, oldBlockSize);
+        setSize(block, preBlockSize);
         sf_free(block->body.payload);
 
         // post-splitting and freeing
-        sf_block* newBlock = (sf_block*)(((char*)pp)-16);
-        size_t newBlockSize = size+8;
-        int remainder = newBlockSize%64;
+        size_t midBlockSize = size+8; // size for the mid block after pre and post splitting
+        int remainder = midBlockSize%64;
         if(remainder>0){
-            newBlockSize = (newBlockSize/64)*64+64;
+            midBlockSize = (midBlockSize/64)*64+64;
             // printf("The size is %lu", size);
         }
-        split(newBlockSize, newBlock);
-        return pp;
+        split(midBlockSize, newBlock);
     }
+    sf_block* postBlock = getNextBlock(newBlock);
+    if(isWildernessBlock(getNextBlock(postBlock))){ // coalesce post block with wilderness block
+        deleteFromFreelist(postBlock);
+        deleteFromFreelist(getNextBlock(postBlock));
+        size_t size = getSize(postBlock) + getSize(getNextBlock(postBlock));
+        setSize(postBlock, size);
+        getNextBlock(postBlock)->prev_footer = postBlock->header;
+        sf_free_list_heads[NUM_FREE_LISTS-1].body.links.next = postBlock;
+        sf_free_list_heads[NUM_FREE_LISTS-1].body.links.prev = postBlock;
+        postBlock->body.links.next = &sf_free_list_heads[NUM_FREE_LISTS-1];
+        postBlock->body.links.prev = &sf_free_list_heads[NUM_FREE_LISTS-1];
+    }
+    // sf_show_heap();
+    return pp;
 }

@@ -206,3 +206,17 @@ Test(sf_memsuite_student, realloc_smaller_block_free_block, .init = sf_mem_init,
 //DO NOT DELETE THESE COMMENTS
 //############################################
 
+Test(sf_memsuite_student, memalign, .init = sf_mem_init, .fini = sf_mem_fini) {
+	void *pp = sf_memalign(1000, 4096);;
+
+	cr_assert_not_null(pp, "pp is NULL!");
+
+	sf_block *bp = (sf_block *)((char*)pp - 2*sizeof(sf_header));
+	cr_assert(bp->header & THIS_BLOCK_ALLOCATED, "Allocated bit is not set!");
+	cr_assert((bp->header & BLOCK_SIZE_MASK) == 1024, "Memalign'ed block size not what was expected!");
+
+	unsigned long p = (unsigned long)pp;
+	cr_assert((p%4096)==0, "Payload address is not align with 4096");
+
+	// assert_free_block_count(3200, 1);
+}
