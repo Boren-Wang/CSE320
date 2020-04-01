@@ -225,22 +225,36 @@ Test(sf_memsuite_student, memalign, .init = sf_mem_init, .fini = sf_mem_fini) {
 
 Test(sf_memsuite_student, validPointer, .init = sf_mem_init, .fini = sf_mem_fini) {
 	void* pp;
-	sf_block *bp;
-	// sf_block block;
 	int res;
 
-	// pp= NULL;
-	// res = validPointer(pp);
-	// cr_assert(res == 0, "validPointer fails to catch a NULL pointer");
+	pp= NULL;
+	res = validPointer(pp);
+	cr_assert(res == 0, "validPointer fails to catch a NULL pointer");
 
-	// pp = (void*)(0x5597dd4d52b8 + 0x8); // aligned payload address
-	pp = (void*)(0x5597dd4d52b8-8); // address of a block
-	bp = (sf_block*)pp;
-	pp = &bp->body.payload;
+	pp = sf_malloc(8);
 	res = validPointer(pp);
 	cr_assert(res == 1, "validPointer wrongly catches a valid pointer that is aligned with 64!");
 
-	// pp = (void*)(0x5597dd4d52b8); // not aligned
-	// res = validPointer(pp);
-	// cr_assert(res == 0, "validPointer fails to catch a invalid pointer that is not aligned with 64!");
+	sf_free(pp);
+	res = validPointer(pp);
+	cr_assert(res == 0, "validPointer fails to catch a invalid pointer that is already free");
+
+	pp = sf_mem_start();
+	res = validPointer(pp);
+	cr_assert(res == 0, "validPointer fails to catch a invalid pointer that is before the end of the prologue");
+
+	pp = sf_mem_end()+64;
+	res = validPointer(pp);
+	cr_assert(res == 0, "validPointer fails to catch a invalid pointer that is after the beginning of the epilogue");
+
+	pp = (void*)(0x5597dd4d52b8); // not aligned
+	res = validPointer(pp);
+	cr_assert(res == 0, "validPointer fails to catch a invalid pointer that is not aligned with 64!");
+
+	pp = sf_malloc(8);
+	pp = sf_malloc(8);
+	sf_block *bp = (sf_block *)((char*)pp - 2*sizeof(sf_header));
+	setPrevAlloc(bp, 0);
+	res = validPointer(pp);
+	cr_assert(res == 0, "validPointer fails to catch a invalid pointer with wrong prev_alloc field");
 }

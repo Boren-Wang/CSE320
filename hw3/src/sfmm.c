@@ -341,23 +341,22 @@ int validPointer(void *pp){ // need to test this function!!!
         printf("The pointer is not aligned to a 64-byte boundary\n");
         return 0;
     }
-    sf_block* bp = (sf_block*)( ((char*)pp)-16 );
-    sf_block block = *bp; // !!!
-    if( (block.header & THIS_BLOCK_ALLOCATED) == 0){ // if the block's allocated bit is 0 (free block)
-        printf("The allocated bit in the header is 0\n");
-        return 0;
-    }
-    if( (void*)( &(block.header) ) < (void*)( ((char*)sf_mem_start())+56+64 ) ){
+    if( pp-8 < sf_mem_start()+56+64 ){
         printf("The header of the block is before the end of the prologue.\n");
         return 0;
     }
+    sf_block* bp = (sf_block*)( ((char*)pp)-16 );
     sf_block* next = getNextBlock(bp);
-    if( (void*)&(next->prev_footer) > (void*)( ((char*)sf_mem_end())-8) ){
+    if( (void*)&(next->prev_footer) >  sf_mem_end()-8 ){
         printf("The footer of the block is after the beginning of the epilogue.\n");
         return 0;
     }
+    if( (bp->header & THIS_BLOCK_ALLOCATED) == 0 ){ // if the block's allocated bit is 0 (free block)
+        printf("The allocated bit in the header is 0\n");
+        return 0;
+    }
     // if( prevBlockIsFree(&block) && (block.prev_footer&THIS_BLOCK_ALLOCATED)!=0 ){
-    if( prevBlockIsFree(&block) && ( (getPrevBlock(&block)->header) & THIS_BLOCK_ALLOCATED)!=0 ){
+    if( prevBlockIsFree(bp) && ( (getPrevBlock(bp)->header) & THIS_BLOCK_ALLOCATED)!=0 ){
         printf("The prev_alloc field is 0, indicating that the previous block is free, but the alloc field of the previous block header is not 0.\n");
         return 0;
     }

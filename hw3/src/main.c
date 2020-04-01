@@ -76,14 +76,19 @@ int main(int argc, char const *argv[]) {
     // sf_memalign(500, 256);
     // sf_show_heap();
 
-    void* pp;
+    // void* pp;
     // sf_block *bp;
     // sf_block block;
     // int res;
-
-    pp = (void*)(0x5597dd4d52b8+8); // address of a block
+    // pp = sf_malloc(8);
+    // sf_show_heap();
+    // pp = (void*)(0x559dbb6382f8+8); // address of a block
     // bp = (sf_block*)pp;
-    sf_free(pp);
+    // sf_free(pp);
+    // pp = (void*)(0x55a3354d0278+8);
+    // pp = sf_mem_start();
+    // printf("%p\n", pp);
+    // sf_free(pp);
     // printf("%lu\n", bp->header);
     // pp = &bp->body.payload;
     // bp = (sf_block*)( (pp)-16 );
