@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include "sfmm.h"
+#include "myheader.h"
 
 int main(int argc, char const *argv[]) {
     sf_mem_init();
@@ -66,9 +67,29 @@ int main(int argc, char const *argv[]) {
     // sf_malloc(sizeof(int));
     // sf_show_heap();
     // sf_memalign(1000, 4096);
-    sf_malloc(sizeof(int));
-    sf_memalign(3820, 4096);
-    sf_show_heap();
+
+    // sf_malloc(sizeof(int));
+    // sf_memalign(3820, 4096);
+    // sf_show_heap();
+
+    // sf_malloc(8);
+    // sf_memalign(500, 256);
+    // sf_show_heap();
+
+    void* pp;
+    // sf_block *bp;
+    // sf_block block;
+    // int res;
+
+    pp = (void*)(0x5597dd4d52b8+8); // address of a block
+    // bp = (sf_block*)pp;
+    sf_free(pp);
+    // printf("%lu\n", bp->header);
+    // pp = &bp->body.payload;
+    // bp = (sf_block*)( (pp)-16 );
+    // sf_block block = *bp;
+    // validPointer(pp);
+
     sf_mem_fini();
 
     return EXIT_SUCCESS;

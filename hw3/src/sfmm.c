@@ -332,17 +332,17 @@ void sf_free(void *pp) {
 }
 
 int validPointer(void *pp){ // need to test this function!!!
-    unsigned long p = (unsigned long)pp;
-    sf_block* bp = (sf_block*)( ((char*)pp)-16 );
-    sf_block block = *bp;
     if(pp==NULL){
         printf("The pointer is NULL\n");
         return 0;
     }
+    unsigned long p = (unsigned long)pp;
     if( p % 64 != 0 ){
         printf("The pointer is not aligned to a 64-byte boundary\n");
         return 0;
     }
+    sf_block* bp = (sf_block*)( ((char*)pp)-16 );
+    sf_block block = *bp; // !!!
     if( (block.header & THIS_BLOCK_ALLOCATED) == 0){ // if the block's allocated bit is 0 (free block)
         printf("The allocated bit in the header is 0\n");
         return 0;

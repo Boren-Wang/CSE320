@@ -207,7 +207,9 @@ Test(sf_memsuite_student, realloc_smaller_block_free_block, .init = sf_mem_init,
 //############################################
 
 Test(sf_memsuite_student, memalign, .init = sf_mem_init, .fini = sf_mem_fini) {
-	void *pp = sf_memalign(1000, 4096);;
+	size_t size = 1000;
+	size_t align = 4096;
+	void *pp = sf_memalign(size, align);;
 
 	cr_assert_not_null(pp, "pp is NULL!");
 
@@ -216,7 +218,29 @@ Test(sf_memsuite_student, memalign, .init = sf_mem_init, .fini = sf_mem_fini) {
 	cr_assert((bp->header & BLOCK_SIZE_MASK) == 1024, "Memalign'ed block size not what was expected!");
 
 	unsigned long p = (unsigned long)pp;
-	cr_assert((p%4096)==0, "Payload address is not align with 4096");
+	cr_assert((p%align)==0, "Payload address is not align with 4096");
 
 	// assert_free_block_count(3200, 1);
+}
+
+Test(sf_memsuite_student, validPointer, .init = sf_mem_init, .fini = sf_mem_fini) {
+	void* pp;
+	sf_block *bp;
+	// sf_block block;
+	int res;
+
+	// pp= NULL;
+	// res = validPointer(pp);
+	// cr_assert(res == 0, "validPointer fails to catch a NULL pointer");
+
+	// pp = (void*)(0x5597dd4d52b8 + 0x8); // aligned payload address
+	pp = (void*)(0x5597dd4d52b8-8); // address of a block
+	bp = (sf_block*)pp;
+	pp = &bp->body.payload;
+	res = validPointer(pp);
+	cr_assert(res == 1, "validPointer wrongly catches a valid pointer that is aligned with 64!");
+
+	// pp = (void*)(0x5597dd4d52b8); // not aligned
+	// res = validPointer(pp);
+	// cr_assert(res == 0, "validPointer fails to catch a invalid pointer that is not aligned with 64!");
 }
