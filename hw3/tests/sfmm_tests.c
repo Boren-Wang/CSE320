@@ -7,6 +7,7 @@
 
 void assert_free_block_count(size_t size, int count);
 void assert_free_list_block_count(size_t size, int count);
+void assert_total_free_block_count(int count);
 
 /*
  * Assert the total number of free blocks of a specified size.
@@ -103,7 +104,7 @@ Test(sf_memsuite_student, free_no_coalesce, .init = sf_mem_init, .fini = sf_mem_
 	/* void *x = */ sf_malloc(8);
 	void *y = sf_malloc(200);
 	/* void *z = */ sf_malloc(1);
-
+	// sf_show_heap();
 	sf_free(y);
 
 	assert_free_block_count(0, 2);
@@ -119,8 +120,11 @@ Test(sf_memsuite_student, free_coalesce, .init = sf_mem_init, .fini = sf_mem_fin
 	void *y = sf_malloc(300);
 	/* void *z = */ sf_malloc(4);
 
-	sf_free(y);
-	sf_free(x);
+	// sf_show_heap();
+	sf_free(y); // 320
+	// sf_show_heap();
+	sf_free(x); // 256
+	// sf_show_heap();
 
 	assert_free_block_count(0, 2);
 	assert_free_block_count(576, 1);
@@ -171,7 +175,9 @@ Test(sf_memsuite_student, realloc_larger_block, .init = sf_mem_init, .fini = sf_
 
 Test(sf_memsuite_student, realloc_smaller_block_splinter, .init = sf_mem_init, .fini = sf_mem_fini) {
 	void *x = sf_malloc(sizeof(int) * 20);
+	// sf_show_heap();
 	void *y = sf_realloc(x, sizeof(int) * 16);
+	// sf_show_heap();
 
 	cr_assert_not_null(y, "y is NULL!");
 	cr_assert(x == y, "Payload addresses are different!");
@@ -187,7 +193,9 @@ Test(sf_memsuite_student, realloc_smaller_block_splinter, .init = sf_mem_init, .
 
 Test(sf_memsuite_student, realloc_smaller_block_free_block, .init = sf_mem_init, .fini = sf_mem_fini) {
 	void *x = sf_malloc(sizeof(double) * 8);
+	// sf_show_heap();
 	void *y = sf_realloc(x, sizeof(int));
+	// sf_show_heap();
 
 	cr_assert_not_null(y, "y is NULL!");
 
@@ -206,7 +214,65 @@ Test(sf_memsuite_student, realloc_smaller_block_free_block, .init = sf_mem_init,
 //DO NOT DELETE THESE COMMENTS
 //############################################
 
-Test(sf_memsuite_student, memalign, .init = sf_mem_init, .fini = sf_mem_fini) {
+void assert_total_free_block_count(int count) {
+    int cnt = 0;
+    for(int i=0; i<NUM_FREE_LISTS; i++){
+		sf_block *bp = sf_free_list_heads[i].body.links.next;
+	    while(bp != &sf_free_list_heads[i]) {
+			cnt++;
+			bp = bp->body.links.next;
+	    }
+    }
+
+    cr_assert_eq(cnt, count, "Free lists has wrong number of free blocks (exp=%d, found=%d)",
+		 count, cnt);
+}
+
+Test(sf_memsuite_student, malloc_use_whole_wilderness_block, .init = sf_mem_init, .fini = sf_mem_fini) {
+	sf_errno = 0;
+	sf_malloc(PAGE_SZ-64-56-8-8);
+	// sf_show_heap();
+	assert_total_free_block_count(0);
+}
+
+Test(sf_memsuite_student, free_coalesce_prev_block_freed, .init = sf_mem_init, .fini = sf_mem_fini) {
+	sf_errno = 0;
+	void *x = sf_malloc(8);
+	void *y = sf_malloc(8);
+	sf_malloc(8);
+
+	// sf_show_heap();
+	sf_free(x); // 320
+	// sf_show_heap();
+	sf_free(y);
+	// sf_show_heap();
+
+	assert_free_block_count(128, 1);
+	assert_free_block_count(3776, 1);
+	assert_total_free_block_count(2);
+	cr_assert(sf_errno == 0, "sf_errno is not zero!");
+}
+
+Test(sf_memsuite_student, free_coalesce_both_blocks_freed, .init = sf_mem_init, .fini = sf_mem_fini) {
+	sf_errno = 0;
+	void *x = sf_malloc(8);
+	void *y = sf_malloc(8);
+	void *z = sf_malloc(8);
+
+	// sf_show_heap();
+	sf_free(x); // 320
+	// sf_show_heap();
+	sf_free(z); // 256
+	// sf_show_heap();
+	sf_free(y);
+	// sf_show_heap();
+
+	assert_free_block_count(3968, 1);
+	assert_total_free_block_count(1);
+	cr_assert(sf_errno == 0, "sf_errno is not zero!");
+}
+
+Test(sf_memsuite_student, memalign_not_immediately_aligned, .init = sf_mem_init, .fini = sf_mem_fini) {
 	size_t size = 1000;
 	size_t align = 4096;
 	void *pp = sf_memalign(size, align);;
@@ -220,7 +286,40 @@ Test(sf_memsuite_student, memalign, .init = sf_mem_init, .fini = sf_mem_fini) {
 	unsigned long p = (unsigned long)pp;
 	cr_assert((p%align)==0, "Payload address is not align with 4096");
 
-	// assert_free_block_count(3200, 1);
+	assert_total_free_block_count(2);
+}
+
+Test(sf_memsuite_student, memalign_immediately_aligned, .init = sf_mem_init, .fini = sf_mem_fini) {
+	size_t size = 500;
+	size_t align = 256;
+	void *pp = sf_memalign(size, align);;
+
+	cr_assert_not_null(pp, "pp is NULL!");
+
+	sf_block *bp = (sf_block *)((char*)pp - 2*sizeof(sf_header));
+	cr_assert(bp->header & THIS_BLOCK_ALLOCATED, "Allocated bit is not set!");
+	cr_assert((bp->header & BLOCK_SIZE_MASK) == 512, "Memalign'ed block size not what was expected!");
+
+	unsigned long p = (unsigned long)pp;
+	cr_assert((p%align)==0, "Payload address is not align with 256");
+
+	assert_free_block_count(3456, 1);
+
+	sf_free(pp);
+	size = 250;
+	align = 256;
+	pp = sf_memalign(size, align);;
+
+	cr_assert_not_null(pp, "pp is NULL!");
+
+	bp = (sf_block *)((char*)pp - 2*sizeof(sf_header));
+	cr_assert(bp->header & THIS_BLOCK_ALLOCATED, "Allocated bit is not set!");
+	cr_assert((bp->header & BLOCK_SIZE_MASK) == 320, "Memalign'ed block size not what was expected!");
+
+	p = (unsigned long)pp;
+	cr_assert((p%align)==0, "Payload address is not align with 256");
+
+	assert_free_block_count(3648, 1);
 }
 
 Test(sf_memsuite_student, validPointer, .init = sf_mem_init, .fini = sf_mem_fini) {

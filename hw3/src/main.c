@@ -59,7 +59,6 @@ int main(int argc, char const *argv[]) {
     // sf_show_heap();
     // printf("%p%p", x, y);
 
-
     // sf_show_blocks();
     // sf_show_free_lists();
     // sf_show_heap();
@@ -73,7 +72,7 @@ int main(int argc, char const *argv[]) {
     // sf_show_heap();
 
     // sf_malloc(8);
-    // sf_memalign(500, 256);
+    // sf_memalign(1000, 4096);
     // sf_show_heap();
 
     // void* pp;
@@ -95,6 +94,8 @@ int main(int argc, char const *argv[]) {
     // sf_block block = *bp;
     // validPointer(pp);
 
+    // sf_malloc(8);
+    // sf_show_heap();
     sf_mem_fini();
 
     return EXIT_SUCCESS;

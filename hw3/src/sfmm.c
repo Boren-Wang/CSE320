@@ -35,7 +35,7 @@ void *sf_malloc(size_t size) {
         while(1){
             sf_block* new_page = sf_mem_grow();
             if(new_page==NULL){
-                printf("No memory\n");
+                // printf("No memory\n");
                 sf_errno = ENOMEM;
                 return NULL;
             }
@@ -78,13 +78,13 @@ void *sf_malloc(size_t size) {
                 if(wilderness==NULL){
                     // printf("New wilderness block\n");
                     wilderness = (sf_block*)(((char*)new_page)-16);
-                    setSize(wilderness, 4096);
+                    setSize(wilderness, PAGE_SZ);
                     setAlloc(wilderness, 0);
                     setPrevAlloc(wilderness, 1);
                     getNextBlock(wilderness)->prev_footer = wilderness->header;
                     addToFreelist(NUM_FREE_LISTS-1, wilderness);
                 } else {
-                    setSize(wilderness, 4096+getSize(wilderness));
+                    setSize(wilderness, PAGE_SZ+getSize(wilderness));
                     getNextBlock(wilderness)->prev_footer = wilderness->header;
                     // printf("The size of the new wilderness block is: %lu\n", getSize(wilderness));
                     // printf("Size is %lu\n", size);
@@ -295,20 +295,20 @@ void sf_free(void *pp) {
         // coalesce
         sf_block* new = bp;
         if(prevBlockIsFree(bp) & isFree(getNextBlock(bp))){ // if prev and next blocks are freed
-            printf("Prev and next blocks are free\n");
+            // printf("Prev and next blocks are free\n");
             deleteFromFreelist(getPrevBlock(bp)); // delete the prev block from its free list
             deleteFromFreelist(getNextBlock(bp));
             size_t size = getSize(getPrevBlock(bp)) + getSize(bp) + getSize(getNextBlock(bp));
             new = getPrevBlock(bp);
             setSize(new, size);
         } else if(prevBlockIsFree(bp)) { // if prev block is freed
-            printf("Prev block is free\n");
+            // printf("Prev block is free\n");
             deleteFromFreelist(getPrevBlock(bp));
             size_t size = getSize(getPrevBlock(bp)) + getSize(bp);
             new = getPrevBlock(bp);
             setSize(new, size);
         } else if(isFree(getNextBlock(bp))) { // if next block is freed
-            printf("Next block is free\n");
+            // printf("Next block is free\n");
             deleteFromFreelist(getNextBlock(bp));
             size_t size = getSize(bp) + getSize(getNextBlock(bp));
             new = bp;
@@ -333,31 +333,31 @@ void sf_free(void *pp) {
 
 int validPointer(void *pp){ // need to test this function!!!
     if(pp==NULL){
-        printf("The pointer is NULL\n");
+        // printf("The pointer is NULL\n");
         return 0;
     }
     unsigned long p = (unsigned long)pp;
     if( p % 64 != 0 ){
-        printf("The pointer is not aligned to a 64-byte boundary\n");
+        // printf("The pointer is not aligned to a 64-byte boundary\n");
         return 0;
     }
     if( pp-8 < sf_mem_start()+56+64 ){
-        printf("The header of the block is before the end of the prologue.\n");
+        // printf("The header of the block is before the end of the prologue.\n");
         return 0;
     }
     sf_block* bp = (sf_block*)( ((char*)pp)-16 );
     sf_block* next = getNextBlock(bp);
     if( (void*)&(next->prev_footer) >  sf_mem_end()-8 ){
-        printf("The footer of the block is after the beginning of the epilogue.\n");
+        // printf("The footer of the block is after the beginning of the epilogue.\n");
         return 0;
     }
     if( (bp->header & THIS_BLOCK_ALLOCATED) == 0 ){ // if the block's allocated bit is 0 (free block)
-        printf("The allocated bit in the header is 0\n");
+        // printf("The allocated bit in the header is 0\n");
         return 0;
     }
     // if( prevBlockIsFree(&block) && (block.prev_footer&THIS_BLOCK_ALLOCATED)!=0 ){
     if( prevBlockIsFree(bp) && ( (getPrevBlock(bp)->header) & THIS_BLOCK_ALLOCATED)!=0 ){
-        printf("The prev_alloc field is 0, indicating that the previous block is free, but the alloc field of the previous block header is not 0.\n");
+        // printf("The prev_alloc field is 0, indicating that the previous block is free, but the alloc field of the previous block header is not 0.\n");
         return 0;
     }
     return 1;
@@ -409,6 +409,7 @@ void *sf_realloc(void *pp, size_t rsize) {
         if(rbsize>bsize){ // if reallocating to a larger size
             void* new = sf_malloc(rsize);
             if(new==NULL){
+                sf_errno = ENOMEM;
                 return NULL;
             }
             memcpy(new, pp, size);
@@ -448,6 +449,7 @@ void *sf_realloc(void *pp, size_t rsize) {
             return pp;
         }
     } else { // invalid pointer
+        sf_errno = EINVAL;
         abort();
     }
 }
@@ -468,7 +470,7 @@ void *sf_memalign(size_t size, size_t align) {
     sf_block* newBlock;
     // sf_show_heap();
     if( (p & (align-1)) == 0 ){ // payload address is aligned with align
-        printf("Payload address is aligned with align\n");
+        // printf("Payload address is aligned with align\n");
         // post-splitting and freeing
         newBlock = (sf_block*)(((char*)pp)-16); // block to be return by this memalign
         size_t newBlockSize = size+8;
@@ -479,7 +481,7 @@ void *sf_memalign(size_t size, size_t align) {
         }
         split(newBlockSize, newBlock);
     } else { // if not aligned
-        printf("not aligned\n");
+        // printf("not aligned\n");
         size_t preBlockSize = 0;
         while( (p & (align-1)) != 0 ){
             p+=1;
@@ -495,7 +497,9 @@ void *sf_memalign(size_t size, size_t align) {
 
         // pre-splitting and freeing
         setSize(block, preBlockSize);
+        // sf_show_heap();
         sf_free(block->body.payload);
+        // sf_show_heap();
 
         // post-splitting and freeing
         size_t midBlockSize = size+8; // size for the mid block after pre and post splitting
