@@ -322,6 +322,15 @@ Test(sf_memsuite_student, memalign_immediately_aligned, .init = sf_mem_init, .fi
 	assert_free_block_count(3648, 1);
 }
 
+Test(sf_memsuite_student, split_no_splinter, .init = sf_mem_init, .fini = sf_mem_fini) {
+	void* pp = sf_malloc(8);
+	sf_block *bp = (sf_block *)((char*)pp - 2*sizeof(sf_header));
+	split(8, bp);
+	// sf_show_heap();
+	assert_free_block_count(3904, 1);
+	assert_total_free_block_count(1);
+}
+
 Test(sf_memsuite_student, validPointer, .init = sf_mem_init, .fini = sf_mem_fini) {
 	void* pp;
 	int res;
