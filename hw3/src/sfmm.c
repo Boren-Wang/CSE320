@@ -508,7 +508,7 @@ void *sf_memalign(size_t size, size_t align) {
             midBlockSize = (midBlockSize/64)*64+64;
             // printf("The size is %lu", size);
         }
-        sf_show_heap();
+        // sf_show_heap();
         split(midBlockSize, newBlock);
     }
     sf_block* postBlock = getNextBlock(newBlock);
@@ -523,6 +523,6 @@ void *sf_memalign(size_t size, size_t align) {
         postBlock->body.links.next = &sf_free_list_heads[NUM_FREE_LISTS-1];
         postBlock->body.links.prev = &sf_free_list_heads[NUM_FREE_LISTS-1];
     }
-    sf_show_heap();
+    // sf_show_heap();
     return pp;
 }
