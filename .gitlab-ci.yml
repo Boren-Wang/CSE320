@@ -1,8 +1,8 @@
 image: hwrunner:latest
 variables:
     GIT_SSL_NO_VERIFY: "true"
-    EXEC: sfmm
-    HW_DIR: hw3
+    EXEC: polya
+    HW_DIR: hw4
 before_script:
     - make clean all -C ${HW_DIR}
 stages:
@@ -20,4 +20,4 @@ run:
 test:
     stage: test
     script:
-        - cd ${HW_DIR} && bin/${EXEC}_tests -S --verbose=0 --timeout 5
+        - cd ${HW_DIR} && bin/${EXEC}_tests -S -j1 --verbose=0 --timeout 60
