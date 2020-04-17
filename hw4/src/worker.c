@@ -1,4 +1,7 @@
 #include <stdlib.h>
+#include <sys/types.h>
+#include <unistd.h>
+
 
 #include "debug.h"
 #include "polya.h"
@@ -13,8 +16,6 @@ volatile sig_atomic_t canceled=0;
  * (See polya.h for specification.)
  */
 int worker(void) {
-    // TO BE IMPLEMENTED
-
     // add signal handlers: SIGHUP & SIGTERM
     if(signal(SIGHUP, sighup_handler)==SIG_ERR){
         perror("signal error");
@@ -23,26 +24,35 @@ int worker(void) {
         perror("signal error");
     }
 
-    // SIGCON
+    // stop
+    kill(getpid(), SIGSTOP);
 
     // loop
     while(1){
-        if(canceled==0){ // ?????
-            // read problem
-            struct problem* p = (struct problem*)(malloc(sizeof(struct problem)));
-            fread(p, sizeof(struct problem), 1, stdin); // read the header
-            size_t size = p->size;
-            fread(p->data, size-sizeof(struct problem), 1, stdin); // read the remaining
+        // read problem
+        struct problem* p = (struct problem*)(malloc(sizeof(struct problem)));
+        fread(p, sizeof(struct problem), 1, stdin); // read the header
+        size_t size = p->size;
+        fread(p->data, size-sizeof(struct problem), 1, stdin); // read the remaining
 
-            // solve problem -> succeed/fail/cancel
-            SOLVER* solver = solvers[p->type].solve;
-            struct result* res = solver(p, &canceled);
-
-            // write result
-            fwrite(stdout, res->size, 1, (void*)res);
-
-            // stop
+        // solve problem -> succeed/fail/cancel
+        SOLVER* solver = solvers[p->type].solve;
+        struct result* res = solver(p, &canceled);
+        if(res == NULL){ // if the solver fails or is canceled
+            res = malloc(sizeof(struct result));
+            res->size = sizeof(struct result);
+            res->id = p->id;
+            res->failed = 1;
         }
+        // write result
+        fwrite(stdout, res->size, 1, (void*)res);
+        free(res);
+
+        // stop
+        kill(getpid(), SIGSTOP);
+
+        // reset conceled flag: is it safe??????????
+        canceled = 0;
     }
 
     return EXIT_FAILURE;
