@@ -20,7 +20,7 @@ int worker(void) {
     if(signal(SIGHUP, sighup_handler)==SIG_ERR){
         perror("signal error");
     }
-    if(signal(SIGTERM, sighup_handler)==SIG_ERR){
+    if(signal(SIGTERM, sigterm_handler)==SIG_ERR){
         perror("signal error");
     }
 
@@ -46,6 +46,7 @@ int worker(void) {
         }
         // write result
         fwrite(stdout, res->size, 1, (void*)res);
+        // fflush(stdout); // ??????
         free(res);
 
         // stop
