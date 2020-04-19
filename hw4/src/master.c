@@ -8,10 +8,13 @@ struct worker {
     int pid;
     FILE* rd;
     FILE* wt;
-    int status;
+    int state;
 };
 
+struct worker** workers_array;
+
 void sigchild_handler();
+int get_idle_worker(int workers);
 
 /*
  * master
@@ -50,8 +53,15 @@ int master(int workers) {
             close(wt_pipe[1]); // close write side of the write pipe
 
             // redirection
+            dup2(wt_pipe[0], 0);
+            dup2(rd_pipe[1], 1);
 
             // exec
+            char* argv[] = {NULL};
+            if( execv("bin/polya_worker", argv)<0 ){
+                perror("exec error\n");
+                exit(EXIT_FAILURE);
+            }
         } else { // parent
             close(rd_pipe[1]); // close write side of the read pipe
             close(wt_pipe[0]); // close read side of the write pipe
@@ -70,7 +80,7 @@ int master(int workers) {
             child->pid = pid;
             child->rd = rd;
             child->wt = wt;
-            child->status = WORKER_STARTED;
+            child->state = WORKER_STARTED;
             workers_array[i] = child;
         }
 
@@ -78,7 +88,35 @@ int master(int workers) {
 
     // loop: assign problems to idle workers & post results
     while(1){
-        struct problem* p = get_problem_variant(1, 1);
+        int idle_worker_index = get_idle_worker(workers);
+        struct worker* idle_worker = workers_array[idle_worker_index];
+
+        // get problem
+        struct problem* p = get_problem_variant(workers, idle_worker_index); // must not free this pointer
+
+        // assign problem: send SIGCONT -> write problem
+        kill(idle_worker->pid, SIGCONT);
+        FILE* wt = idle_worker->wt;
+        fwrite(p, p->size, 1, wt);
+        fflush(wt);
+
+        struct worker* stopped_worker = workers_array[0];
+        // post result: read result -> set idle -> post result
+        struct result* res = malloc(sizeof(struct result));
+        FILE* rd = stopped_worker->rd;
+        fread(res, sizeof(struct result), 1, rd); // get the header for the result
+        res = realloc(res, res->size); // reallocate
+        void* ptr = (char*)res + sizeof(struct result);
+        fread(ptr, res->size - sizeof(struct result), 1, rd);
+
+        stopped_worker->state = WORKER_IDLE; // set the state of the stopped child to idle
+
+        if( post_result(res, p) == 0) { // is solution
+
+        } else {
+
+        }
+
     }
 
     // termination
@@ -93,3 +131,13 @@ void sigchild_handler() {
 }
 
 // catch or ignore SIGPIPE
+
+int get_idle_worker(int workers) {
+    for(int i=0; i<workers; i++) {
+        struct worker* w = workers_array[i];
+        if(w->state == WORKER_IDLE) {
+            return i;
+        }
+    }
+    return -1;
+}
