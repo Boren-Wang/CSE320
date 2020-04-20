@@ -17,11 +17,12 @@ struct worker {
 
 int w; // number of workers
 struct worker** workers_array;
-volatile sig_atomic_t termsig;
 
 void sigchild_handler();
 struct worker *get_worker(pid_t pid);
 int all_idle();
+void terminate_all();
+int all_terminated();
 
 /*
  * master
@@ -104,9 +105,12 @@ int master(int workers) {
 
     // loop: assign problems to idle workers & post results
     int finished = 0;
-    while(1){
+    int terminated = 0;
+    while(terminated==0){
         // little window
         pause(); // to be changed
+
+        // need to block signal???
 
         // read & post result: read result -> post result -> set child
         for(int i=0; i<w; i++) {
@@ -118,7 +122,7 @@ int master(int workers) {
                 res = realloc(res, res->size); // reallocate
                 void* ptr = (char*)res + sizeof(struct result);
                 fread(ptr, res->size - sizeof(struct result), 1, rd); // get the remaining for the result
-                if( post_result(res, worker->p) == 0) { // is solution
+                if( post_result(res, worker->p) == 0) { // is solution: cancel running processes???
 
                 } else {
 
@@ -157,13 +161,18 @@ int master(int workers) {
         if(finished==1){
             // check if all workers are idle
             if(all_idle()){
-
+                terminate_all(); // terminate all children
+                while(1) {
+                    pause(); // to be changed
+                    if(all_terminated()){ // check if all children are terminated
+                        terminated = 1;
+                        break;
+                    }
+                }
             }
         }
     }
-
-    // termination
-
+    // EXIT_SUCCESS EXIT_FAILURE !!!!!!!!!!
     return EXIT_FAILURE;
 }
 
@@ -185,17 +194,13 @@ void sigchild_handler() {
         } else if(WIFCONTINUED(status)) { // if the child is resumed by SIGCONT
             worker->state = WORKER_RUNNING;
         } else if(WIFEXITED(status)) { // if the child exits normally
-
+            worker->state = WORKER_EXITED;
         } else if(WIFSIGNALED(status)) { // if the child is terminated by signal
-            termsig = WTERMSIG(status);
+            worker->state = WORKER_ABORTED;
         }
-
     }
-
     errno = olderrno;
 }
-
-// catch or ignore SIGPIPE
 
 struct worker *get_worker(pid_t pid) {
     for(int i=0; i<w; i++) {
@@ -211,6 +216,23 @@ int all_idle() {
     for(int i=0; i<w; i++) {
         struct worker* worker = workers_array[i];
         if(worker->state!=WORKER_IDLE){
+            return 0;
+        }
+    }
+    return 1;
+}
+
+void terminate_all() {
+    for(int i=0; i<w; i++) {
+        struct worker* worker = workers_array[i];
+        kill(worker->pid, SIGTERM);
+    }
+}
+
+int all_terminated() {
+    for(int i=0; i<w; i++) {
+        struct worker* worker = workers_array[i];
+        if(worker->state!=WORKER_EXITED) {
             return 0;
         }
     }
