@@ -30,7 +30,7 @@ int worker(void) {
     // loop
     while(1){
         // read problem
-        debug("Worker reading result");
+        // debug("Worker reading result");
         struct problem* header = malloc(sizeof(struct problem));
         fread(header, sizeof(struct problem), 1, stdin); // read the header
         size_t size = header->size;
@@ -50,14 +50,14 @@ int worker(void) {
             res->failed = 1;
         }
         // write result
-        debug("Worker writing result");
+        // debug("Worker writing result");
         fwrite((void*)res, res->size, 1, stdout);
         fflush(stdout);
         free(p);
         free(res);
 
         // stop
-        debug("Worker being stopped");
+        // debug("Worker being stopped");
         kill(getpid(), SIGSTOP);
 
         // reset conceled flag: is it safe??????????
