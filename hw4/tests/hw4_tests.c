@@ -14,38 +14,75 @@
  * included here with the basecode.
  */
 
-Test(demo_master_suite, startup_test) {
-    char *cmd = "demo/polya";
+// Test(demo_master_suite, startup_test) {
+//     char *cmd = "demo/polya";
+//     int return_code = WEXITSTATUS(system(cmd));
+
+//     cr_assert_eq(return_code, EXIT_SUCCESS,
+//                  "Program exited with %d instead of EXIT_SUCCESS",
+// 		 return_code);
+// }
+
+// Test(demo_master_suite, trivial_test) {
+//     char *cmd = "demo/polya -p 1 -t 1";
+//     int return_code = WEXITSTATUS(system(cmd));
+
+//     cr_assert_eq(return_code, EXIT_SUCCESS,
+//                  "Program exited with %d instead of EXIT_SUCCESS",
+// 		 return_code);
+// }
+
+// Test(demo_master_suite, miner_test_one_worker) {
+//     char *cmd = "demo/polya -p 5 -t 2";
+//     int return_code = WEXITSTATUS(system(cmd));
+
+//     cr_assert_eq(return_code, EXIT_SUCCESS,
+//                  "Program exited with %d instead of EXIT_SUCCESS",
+// 		 return_code);
+// }
+
+// Test(demo_master_suite, miner_test_three_workers) {
+//     char *cmd = "demo/polya -p 5 -t 2 -w 3";
+//     int return_code = WEXITSTATUS(system(cmd));
+
+//     cr_assert_eq(return_code, EXIT_SUCCESS,
+//                  "Program exited with %d instead of EXIT_SUCCESS",
+// 		 return_code);
+// }
+
+Test(master_suite, startup_test) {
+    char *cmd = "bin/polya";
     int return_code = WEXITSTATUS(system(cmd));
 
     cr_assert_eq(return_code, EXIT_SUCCESS,
                  "Program exited with %d instead of EXIT_SUCCESS",
-		 return_code);
+         return_code);
 }
 
-Test(demo_master_suite, trivial_test) {
-    char *cmd = "demo/polya -p 1 -t 1";
+Test(master_suite, trivial_test) {
+    char *cmd = "bin/polya -p 1 -t 1";
     int return_code = WEXITSTATUS(system(cmd));
 
     cr_assert_eq(return_code, EXIT_SUCCESS,
                  "Program exited with %d instead of EXIT_SUCCESS",
-		 return_code);
+         return_code);
 }
 
-Test(demo_master_suite, miner_test_one_worker) {
-    char *cmd = "demo/polya -p 5 -t 2";
+Test(master_suite, miner_test_one_worker) {
+    char *cmd = "bin/polya -p 5 -t 2";
     int return_code = WEXITSTATUS(system(cmd));
 
     cr_assert_eq(return_code, EXIT_SUCCESS,
                  "Program exited with %d instead of EXIT_SUCCESS",
-		 return_code);
+         return_code);
 }
 
-Test(demo_master_suite, miner_test_three_workers) {
-    char *cmd = "demo/polya -p 5 -t 2 -w 3";
+Test(master_suite, miner_test_three_workers) {
+    char *cmd = "bin/polya -p 5 -t 2 -w 3";
     int return_code = WEXITSTATUS(system(cmd));
 
     cr_assert_eq(return_code, EXIT_SUCCESS,
                  "Program exited with %d instead of EXIT_SUCCESS",
-		 return_code);
+         return_code);
 }
+

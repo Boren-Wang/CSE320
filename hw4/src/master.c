@@ -20,15 +20,18 @@ struct worker** workers_array;
 
 void sigchild_handler();
 struct worker *get_worker(pid_t pid);
+void cancel_all();
 int all_idle();
 void terminate_all();
 int all_terminated();
+int some_aborted();
 
 /*
  * master
  * (See polya.h for specification.)
  */
 int master(int workers) {
+    sf_start();
     if(workers<=0){
         workers = 1;
     }
@@ -96,6 +99,8 @@ int master(int workers) {
             child->rd = rd;
             child->wt = wt;
             child->state = WORKER_STARTED;
+            // sf_change_state???
+            sf_change_state(pid, 0, WORKER_STARTED);
             workers_array[i] = child;
         }
 
@@ -106,9 +111,12 @@ int master(int workers) {
     // loop: assign problems to idle workers & post results
     int finished = 0;
     int terminated = 0;
+    int solved = 0;
     while(terminated==0){
         // little window
+        debug("start blocking\n");
         pause(); // to be changed
+        debug("finish blocking\n");
 
         // need to block signal???
 
@@ -122,12 +130,13 @@ int master(int workers) {
                 res = realloc(res, res->size); // reallocate
                 void* ptr = (char*)res + sizeof(struct result);
                 fread(ptr, res->size - sizeof(struct result), 1, rd); // get the remaining for the result
-                if( post_result(res, worker->p) == 0) { // is solution: cancel running processes???
-
-                } else {
-
+                sf_recv_result(worker->pid, res);
+                if( post_result(res, worker->p) == 0 ) { // is solution: cancel running processes???
+                    cancel_all();
+                    solved = 1;
                 }
                 worker->state = WORKER_IDLE; // set the state of the stopped child to idle
+                sf_change_state(worker->pid, WORKER_STOPPED, WORKER_IDLE);
                 worker->p = NULL;
             }
         }
@@ -143,18 +152,22 @@ int master(int workers) {
                 }
                 worker->p = p;
                 worker->state = WORKER_CONTINUED;
+                sf_change_state(worker->pid, WORKER_IDLE, WORKER_CONTINUED);
                 kill(worker->pid, SIGCONT);
             }
         }
 
-        // write problem to child(ren)
-        for(int i=0; i<w; i++) {
-            struct worker* worker = workers_array[i];
-            if(worker->state==WORKER_RUNNING) {
-                struct problem* p = worker->p;
-                FILE* wt = worker->wt;
-                fwrite(p, p->size, 1, wt);
-                fflush(wt);
+        if(solved==0){ // if the current problem has not been solved
+            // write problem to child(ren)
+            for(int i=0; i<w; i++) {
+                struct worker* worker = workers_array[i];
+                if(worker->state==WORKER_RUNNING) {
+                    struct problem* p = worker->p;
+                    FILE* wt = worker->wt;
+                    sf_send_problem(worker->pid, p);
+                    fwrite(p, p->size, 1, wt);
+                    fflush(wt);
+                }
             }
         }
 
@@ -163,16 +176,22 @@ int master(int workers) {
             if(all_idle()){
                 terminate_all(); // terminate all children
                 while(1) {
+                    debug("start blocking\n");
                     pause(); // to be changed
-                    if(all_terminated()){ // check if all children are terminated
-                        terminated = 1;
-                        break;
+                    debug("start blocking\n");
+                    if(all_terminated()) { // check if all children are terminated
+
+                    } else if(some_aborted()) {
+
                     }
                 }
             }
+        } else {
+            solved = 0;
         }
     }
     // EXIT_SUCCESS EXIT_FAILURE !!!!!!!!!!
+    sf_end();
     return EXIT_FAILURE;
 }
 
@@ -185,19 +204,26 @@ void sigchild_handler() {
             // ???
         }
         struct worker* worker = get_worker(pid);
+        int oldstate = worker->state;
+        int newstate;
         if(WIFSTOPPED(status)){ // if the child is stopped
             if(worker->state == WORKER_STARTED) {
                 worker->state = WORKER_IDLE;
             } else if(worker->state == WORKER_RUNNING) {
                 worker->state = WORKER_STOPPED;
             }
+            newstate = worker->state;
         } else if(WIFCONTINUED(status)) { // if the child is resumed by SIGCONT
             worker->state = WORKER_RUNNING;
+            newstate = worker->state;
         } else if(WIFEXITED(status)) { // if the child exits normally
             worker->state = WORKER_EXITED;
+            newstate = worker->state;
         } else if(WIFSIGNALED(status)) { // if the child is terminated by signal
             worker->state = WORKER_ABORTED;
+            newstate = worker->state;
         }
+        sf_change_state(pid, oldstate, newstate);
     }
     errno = olderrno;
 }
@@ -210,6 +236,15 @@ struct worker *get_worker(pid_t pid) {
         }
     }
     return NULL;
+}
+
+void cancel_all() {
+    for(int i=0; i<w; i++) {
+        struct worker* worker = workers_array[i];
+        if(worker->state==WORKER_RUNNING){
+            kill(worker->pid, SIGHUP);
+        }
+    }
 }
 
 int all_idle() {
@@ -233,6 +268,15 @@ int all_terminated() {
     for(int i=0; i<w; i++) {
         struct worker* worker = workers_array[i];
         if(worker->state!=WORKER_EXITED) {
+            return 0;
+        }
+    }
+    return 1;
+}
+int some_aborted() {
+    for(int i=0; i<w; i++) {
+        struct worker* worker = workers_array[i];
+        if(worker->state!=WORKER_EXITED || worker->state!=WORKER_ABORTED) {
             return 0;
         }
     }
