@@ -36,6 +36,12 @@ int master(int workers) {
         workers = 1;
     }
     w = workers;
+    sigset_t mask_all;
+    sigset_t prev;
+    sigset_t mask_child;
+    sigfillset(&mask_all);
+    sigemptyset(&mask_child);
+    sigaddset(&mask_child, SIGCHLD);
 
     // add signal handlers: SIGCHILD
     if(signal(SIGCHLD, sigchild_handler)==SIG_ERR){
@@ -47,10 +53,12 @@ int master(int workers) {
     }
 
     // block SIGCHLD
+    sigprocmask(SIG_BLOCK, &mask_all, &prev);
 
     // initialization: pipe->fork->redirection->exec
     struct worker** workers_array = malloc(workers*sizeof(struct worker)); // data structure to keep track of all file descriptors
     for(int i=0; i<workers; i++){
+        // debug("initializing worker %d\n", i);
         pid_t pid;
         FILE *rd, *wt;
 
@@ -71,10 +79,12 @@ int master(int workers) {
             close(wt_pipe[1]); // close write side of the write pipe
 
             // redirection
+            // debug("performing redirection for worker %d\n", i);
             dup2(wt_pipe[0], 0);
             dup2(rd_pipe[1], 1);
 
             // exec
+            // debug("execute worker %d", i);
             char* argv[] = {NULL};
             if( execv("bin/polya_worker", argv)<0 ){
                 perror("exec error\n");
@@ -94,12 +104,11 @@ int master(int workers) {
                 exit(1);
             }
 
-            struct worker* child = malloc(sizeof(child));
+            struct worker* child = malloc(sizeof(struct worker));
             child->pid = pid;
             child->rd = rd;
             child->wt = wt;
             child->state = WORKER_STARTED;
-            // sf_change_state???
             sf_change_state(pid, 0, WORKER_STARTED);
             workers_array[i] = child;
         }
@@ -107,18 +116,22 @@ int master(int workers) {
     }
 
     // unblock SIGCHLD
+    sigprocmask(SIG_SETMASK, &prev, NULL);
+
+    // debug("initialization is finished\n");
 
     // loop: assign problems to idle workers & post results
     int finished = 0;
-    int terminated = 0;
     int solved = 0;
-    while(terminated==0){
+    while(1){
         // little window
-        debug("start blocking\n");
-        pause(); // to be changed
-        debug("finish blocking\n");
+        debug("wait for a signal\n");
+        // sigsuspend(&mask_child);
+        pause();
+        debug("a signal arrives");
 
-        // need to block signal???
+        // block signals
+        sigprocmask(SIG_BLOCK, &mask_all, &prev);
 
         // read & post result: read result -> post result -> set child
         for(int i=0; i<w; i++) {
@@ -131,7 +144,7 @@ int master(int workers) {
                 void* ptr = (char*)res + sizeof(struct result);
                 fread(ptr, res->size - sizeof(struct result), 1, rd); // get the remaining for the result
                 sf_recv_result(worker->pid, res);
-                if( post_result(res, worker->p) == 0 ) { // is solution: cancel running processes???
+                if( post_result(res, worker->p) == 0 ) { // is solution
                     cancel_all();
                     solved = 1;
                 }
@@ -175,38 +188,48 @@ int master(int workers) {
             // check if all workers are idle
             if(all_idle()){
                 terminate_all(); // terminate all children
-                while(1) {
-                    debug("start blocking\n");
-                    pause(); // to be changed
-                    debug("start blocking\n");
-                    if(all_terminated()) { // check if all children are terminated
-
-                    } else if(some_aborted()) {
-
-                    }
-                }
+                break;
             }
         } else {
             solved = 0;
         }
+
+        // unblock signals
+        sigprocmask(SIG_SETMASK, &prev, NULL);
+        debug("conitune\n");
     }
-    // EXIT_SUCCESS EXIT_FAILURE !!!!!!!!!!
+
+    debug("terminating\n");
+    // wait until all children are terminated
+    while(1) {
+        sigsuspend(&mask_child);
+        if(all_terminated()) { // check if all children are terminated
+            sf_end();
+            return EXIT_SUCCESS;
+        } else if(some_aborted()) {
+            sf_end();
+            return EXIT_FAILURE;
+        }
+    }
     sf_end();
     return EXIT_FAILURE;
 }
 
 void sigchild_handler() {
+    debug("sigchild_handler has been called\n");
     int olderrno = errno;
     pid_t pid;
     int status; // used to decide the state(s) of the child(ren)
     while( (pid=waitpid(-1, &status, WNOHANG))!=0 ){
+        debug("SIGCHLD from worker %d\n", pid);
         if(pid<0){ // error
-            // ???
+            perror("wait error\n");
         }
         struct worker* worker = get_worker(pid);
         int oldstate = worker->state;
         int newstate;
         if(WIFSTOPPED(status)){ // if the child is stopped
+            debug("the child is stopped");
             if(worker->state == WORKER_STARTED) {
                 worker->state = WORKER_IDLE;
             } else if(worker->state == WORKER_RUNNING) {
@@ -214,17 +237,23 @@ void sigchild_handler() {
             }
             newstate = worker->state;
         } else if(WIFCONTINUED(status)) { // if the child is resumed by SIGCONT
+            debug("the child is resumed by SIGCONT");
             worker->state = WORKER_RUNNING;
             newstate = worker->state;
         } else if(WIFEXITED(status)) { // if the child exits normally
+            debug("the child exits normally");
             worker->state = WORKER_EXITED;
             newstate = worker->state;
         } else if(WIFSIGNALED(status)) { // if the child is terminated by signal
+            debug("the child is terminated by signal");
             worker->state = WORKER_ABORTED;
             newstate = worker->state;
+        } else {
+            debug("else???");
         }
         sf_change_state(pid, oldstate, newstate);
     }
+    debug("pid is %d\n", pid);
     errno = olderrno;
 }
 

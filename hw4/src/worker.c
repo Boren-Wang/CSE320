@@ -16,6 +16,7 @@ volatile sig_atomic_t canceled=0;
  * (See polya.h for specification.)
  */
 int worker(void) {
+    // debug("worker initilized!\n");
     // add signal handlers: SIGHUP & SIGTERM
     if(signal(SIGHUP, sighup_handler)==SIG_ERR){
         perror("signal error");
@@ -25,6 +26,7 @@ int worker(void) {
     }
 
     // stop
+    debug("about to stop\n");
     kill(getpid(), SIGSTOP);
 
     // loop
