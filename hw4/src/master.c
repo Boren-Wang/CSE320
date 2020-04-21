@@ -21,11 +21,10 @@ int finished = 0;
 int solved = 0;
 
 void sigchild_handler();
-void sigchild_handler_IGN();
 struct worker *get_worker(pid_t pid);
 void cancel_all();
 int all_idle();
-void continue_all();
+// void continue_all();
 void terminate_all();
 int all_terminated();
 int some_aborted();
@@ -62,7 +61,6 @@ int master(int workers) {
 
     // initialization: pipe->fork->redirection->exec
     workers_array = malloc(workers*sizeof(struct worker*)); // data structure to keep track of all file descriptors
-    debug("size of workers_array is %ld", sizeof(workers_array));
     for(int i=0; i<workers; i++){
         // debug("initializing worker %d\n", i);
         pid_t pid;
@@ -92,7 +90,7 @@ int master(int workers) {
             // exec
             // debug("execute worker %d", i);
             char* argv[] = {NULL};
-            if( execv("bin/polya_worker", argv)<0 ){
+            if( execv("bin/polya_worker", argv )<0 ){
                 perror("exec error\n");
                 exit(EXIT_FAILURE);
             }
@@ -129,10 +127,10 @@ int master(int workers) {
     // loop: assign problems to idle workers & post results
     while(1){
         // little window
-        debug("wait for a signal\n");
+        // debug("about to wait for a signal\n");
         sigsuspend(&mask_sigsuspend);
         // pause();
-        debug("a signal arrives");
+        // debug("a signal has arrived\n");
 
         // block signals
         sigprocmask(SIG_BLOCK, &mask_all, &prev);
@@ -205,17 +203,19 @@ int master(int workers) {
     }
 
     terminate_all(); // terminate all children
-    continue_all();
+    // continue_all();
     debug("terminating\n");
     while(1) {
-        debug("wait for a signal\n");
+        // debug("about to wait for a signal\n");
         sigsuspend(&mask_sigsuspend);
         // pause();
-        debug("a signal arrives");
+        // debug("a signal has arrived");
         if(all_terminated()) { // check if all children are terminated
+            debug("all children are terminated\n");
             sf_end();
             return EXIT_SUCCESS;
         } else if(some_aborted()) {
+            debug("some children are aborted\n");
             sf_end();
             return EXIT_FAILURE;
         }
@@ -225,7 +225,7 @@ int master(int workers) {
 }
 
 void sigchild_handler() { // to be changed
-    debug("sigchild_handler is called\n");
+    // debug("sigchild_handler is called\n");
     int olderrno = errno;
     pid_t pid;
     int status; // used to decide the state(s) of the child(ren)
@@ -299,20 +299,22 @@ int all_idle() {
     return 1;
 }
 
-void continue_all() {
-    debug("continue_all is called\n");
-    for(int i=0; i<w; i++) {
-        struct worker* worker = workers_array[i];
-        kill(worker->pid, SIGCONT);
-    }
-}
+// void continue_all() {
+//     debug("continue_all is called\n");
+//     for(int i=0; i<w; i++) {
+//         struct worker* worker = workers_array[i];
+//         kill(worker->pid, SIGCONT);
+//     }
+// }
 
 void terminate_all() {
     debug("terminate_all is called\n");
     for(int i=0; i<w; i++) {
         struct worker* worker = workers_array[i];
-        kill(worker->pid, SIGTERM);
-        debug("worker %d is terminated\n", worker->pid);
+        int ret = kill(worker->pid, SIGTERM);
+        kill(worker->pid, SIGCONT);
+        // debug("worker %d is terminated\n", worker->pid);
+        printf("ret for kill is %d\n", ret);
     }
 }
 
