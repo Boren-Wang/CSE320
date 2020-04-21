@@ -172,7 +172,7 @@ int master(int workers) {
             if(worker->state==WORKER_IDLE) {
                 // get problem from problem source
                 // debug("found an idle worker");
-                struct problem* p = get_problem_variant(workers, 1); // must not free this pointer
+                struct problem* p = get_problem_variant(workers, i); // must not free this pointer
                 if(p==NULL) { // if there are no more problems
                     finished = 1;
                     break;
@@ -346,12 +346,12 @@ void terminate_all() {
     // debug("terminate_all is called\n");
     for(int i=0; i<w; i++) {
         struct worker* worker = workers_array[i];
-        int ret = kill(worker->pid, SIGTERM);
+        kill(worker->pid, SIGTERM);
         kill(worker->pid, SIGCONT);
         worker->state = WORKER_CONTINUED;
         sf_change_state(worker->pid, WORKER_IDLE, WORKER_CONTINUED);
         // debug("worker %d is terminated\n", worker->pid);
-        printf("ret for kill is %d\n", ret);
+        // printf("ret for kill is %d\n", ret);
     }
 }
 

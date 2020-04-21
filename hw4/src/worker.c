@@ -42,6 +42,7 @@ int worker(void) {
         void* ptr = (char*)p+sizeof(struct problem);
         fread(ptr, size-sizeof(struct problem), 1, stdin); // read the remaining
 
+        debug("Got problem: size = %ld, type = %d, variants = %d", p->size, p->type, p->var);
         // solve problem -> succeed/fail/cancel
         SOLVER* solver = solvers[p->type].solve;
         struct result* res = (*solver)(p, &canceled); // ???
