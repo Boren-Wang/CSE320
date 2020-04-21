@@ -79,6 +79,7 @@ int master(int workers) {
         }
 
         if( (pid=fork()) == 0 ) { // child
+            sigprocmask(SIG_SETMASK, &prev, NULL);
             close(rd_pipe[0]); // close read side of the read pipe
             close(wt_pipe[1]); // close write side of the write pipe
 
@@ -204,7 +205,6 @@ int master(int workers) {
 
     terminate_all(); // terminate all children
     // continue_all();
-    debug("terminating\n");
     while(1) {
         // debug("about to wait for a signal\n");
         sigsuspend(&mask_sigsuspend);
@@ -230,12 +230,12 @@ void sigchild_handler() { // to be changed
     pid_t pid;
     int status; // used to decide the state(s) of the child(ren)
     int options = WNOHANG | WSTOPPED | WCONTINUED;
-    while( (pid=waitpid(-1, &status, options))!=0 ){
+    while( (pid=waitpid(-1, &status, options))>0 ){
     // while( (pid=wait(&status)) > 0 ) {
         debug("SIGCHLD from worker %d\n", pid);
-        if(pid<0){ // error
-            printf("wait error %d\n", errno);
-        }
+        // if(pid<0){ // error
+        //     printf("wait error %d\n", errno);
+        // }
         struct worker* worker = get_worker(pid);
         int oldstate = worker->state;
         int newstate;
@@ -313,6 +313,8 @@ void terminate_all() {
         struct worker* worker = workers_array[i];
         int ret = kill(worker->pid, SIGTERM);
         kill(worker->pid, SIGCONT);
+        worker->state = WORKER_CONTINUED;
+        sf_change_state(worker->pid, WORKER_IDLE, WORKER_CONTINUED);
         // debug("worker %d is terminated\n", worker->pid);
         printf("ret for kill is %d\n", ret);
     }
