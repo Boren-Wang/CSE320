@@ -18,13 +18,14 @@ struct worker {
 int w; // number of workers
 struct worker** workers_array;
 int finished = 0;
-int solved = 0;
+// int solved = 0;
 
 void sigchild_handler();
 struct worker *get_worker(pid_t pid);
 void cancel_all();
+int all_canceled();
+void idle_all();
 int all_idle();
-// void continue_all();
 void terminate_all();
 int all_terminated();
 int some_aborted();
@@ -149,7 +150,14 @@ int master(int workers) {
                 sf_recv_result(worker->pid, res);
                 if( post_result(res, worker->p) == 0 ) { // is solution
                     cancel_all();
-                    solved = 1;
+                    // solved = 1;
+                    while(all_canceled()==0) { // wait until all solution attempts have been canceled
+                        // debug("about to wait a signal");
+                        sigsuspend(&mask_sigsuspend);
+                        // debug("a signal has arrived");
+                    }
+                    idle_all();
+                    break;
                 }
                 worker->state = WORKER_IDLE; // set the state of the stopped child to idle
                 sf_change_state(worker->pid, WORKER_STOPPED, WORKER_IDLE);
@@ -157,12 +165,14 @@ int master(int workers) {
             }
         }
 
+        // debug("about to assign problem");
         // assign problem: send SIGCONT
         for(int i=0; i<w; i++) {
             struct worker* worker = workers_array[i];
             if(worker->state==WORKER_IDLE) {
                 // get problem from problem source
-                struct problem* p = get_problem_variant(workers, i); // must not free this pointer
+                // debug("found an idle worker");
+                struct problem* p = get_problem_variant(workers, 1); // must not free this pointer
                 if(p==NULL) { // if there are no more problems
                     finished = 1;
                     break;
@@ -171,40 +181,51 @@ int master(int workers) {
                 worker->state = WORKER_CONTINUED;
                 sf_change_state(worker->pid, WORKER_IDLE, WORKER_CONTINUED);
                 kill(worker->pid, SIGCONT);
-            }
-        }
-
-        if(solved==0){ // if the current problem has not been solved
-            // write problem to child(ren)
-            for(int i=0; i<w; i++) {
-                struct worker* worker = workers_array[i];
-                if(worker->state==WORKER_RUNNING) {
-                    struct problem* p = worker->p;
-                    FILE* wt = worker->wt;
-                    sf_send_problem(worker->pid, p);
-                    fwrite(p, p->size, 1, wt);
-                    fflush(wt);
+                // ------- changed part -------
+                while(worker->state!=WORKER_RUNNING){
+                    // debug("about to wait for worker %d to run", worker->pid);
+                    sigsuspend(&mask_sigsuspend);
                 }
+                FILE* wt = worker->wt;
+                sf_send_problem(worker->pid, p);
+                fwrite(p, p->size, 1, wt);
+                fflush(wt);
             }
+            // else {
+            //     debug("found a non-idle worker");
+            // }
         }
 
+        // if(solved==0){ // if the current problem has not been solved
+        //     // write problem to child(ren)
+        //     for(int i=0; i<w; i++) {
+        //         struct worker* worker = workers_array[i];
+        //         if(worker->state==WORKER_RUNNING) {
+        //             struct problem* p = worker->p;
+        //             FILE* wt = worker->wt;
+        //             sf_send_problem(worker->pid, p);
+        //             fwrite(p, p->size, 1, wt);
+        //             fflush(wt);
+        //         }
+        //     }
+        // }
+        // debug("about to check if it is finished");
         if(finished==1){
             // check if all workers are idle
             if(all_idle()){
                 // terminate_all(); // terminate all children
                 break;
             }
-        } else {
-            solved = 0;
         }
+        // else {
+        //     solved = 0;
+        // }
 
         // unblock signals
         sigprocmask(SIG_SETMASK, &prev, NULL);
-        // debug("conitune\n");
     }
 
     terminate_all(); // terminate all children
-    // continue_all();
     while(1) {
         // debug("about to wait for a signal\n");
         sigsuspend(&mask_sigsuspend);
@@ -281,10 +302,32 @@ struct worker *get_worker(pid_t pid) {
 }
 
 void cancel_all() {
+    // debug("cancel_all is called");
     for(int i=0; i<w; i++) {
         struct worker* worker = workers_array[i];
-        if(worker->state==WORKER_RUNNING){
+        if(worker->state==WORKER_RUNNING || worker->state==WORKER_CONTINUED) {
             kill(worker->pid, SIGHUP);
+            sf_cancel(worker->pid);
+        }
+    }
+}
+
+int all_canceled() {
+    for(int i=0; i<w; i++) {
+        struct worker* worker = workers_array[i];
+        if(worker->state==WORKER_RUNNING || worker->state==WORKER_CONTINUED) {
+            return 0;
+        }
+    }
+    // debug("all solution attempts have been canceled");
+    return 1;
+}
+
+void idle_all() {
+    for(int i=0; i<w; i++) {
+        struct worker* worker = workers_array[i];
+        if(worker->state==WORKER_STOPPED){
+            worker->state = WORKER_IDLE;
         }
     }
 }
@@ -299,16 +342,8 @@ int all_idle() {
     return 1;
 }
 
-// void continue_all() {
-//     debug("continue_all is called\n");
-//     for(int i=0; i<w; i++) {
-//         struct worker* worker = workers_array[i];
-//         kill(worker->pid, SIGCONT);
-//     }
-// }
-
 void terminate_all() {
-    debug("terminate_all is called\n");
+    // debug("terminate_all is called\n");
     for(int i=0; i<w; i++) {
         struct worker* worker = workers_array[i];
         int ret = kill(worker->pid, SIGTERM);
