@@ -152,9 +152,9 @@ int master(int workers) {
                     cancel_all();
                     // solved = 1;
                     while(all_canceled()==0) { // wait until all solution attempts have been canceled
-                        // debug("about to wait a signal");
+                        debug("about to wait a signal");
                         sigsuspend(&mask_sigsuspend);
-                        // debug("a signal has arrived");
+                        debug("a signal has arrived");
                     }
                     idle_all();
                     break;
@@ -227,10 +227,10 @@ int master(int workers) {
 
     terminate_all(); // terminate all children
     while(1) {
-        // debug("about to wait for a signal\n");
+        debug("about to wait for a signal\n");
         sigsuspend(&mask_sigsuspend);
         // pause();
-        // debug("a signal has arrived");
+        debug("a signal has arrived");
         if(all_terminated()) { // check if all children are terminated
             debug("all children are terminated\n");
             sf_end();
@@ -239,6 +239,8 @@ int master(int workers) {
             debug("some children are aborted\n");
             sf_end();
             return EXIT_FAILURE;
+        } else {
+            debug("else???");
         }
     }
     sf_end();
@@ -335,7 +337,7 @@ void idle_all() {
 int all_idle() {
     for(int i=0; i<w; i++) {
         struct worker* worker = workers_array[i];
-        if(worker->state!=WORKER_IDLE){
+        if(worker->state!=WORKER_IDLE && worker->state!=WORKER_ABORTED){
             return 0;
         }
     }
@@ -346,12 +348,14 @@ void terminate_all() {
     // debug("terminate_all is called\n");
     for(int i=0; i<w; i++) {
         struct worker* worker = workers_array[i];
-        kill(worker->pid, SIGTERM);
-        kill(worker->pid, SIGCONT);
-        worker->state = WORKER_CONTINUED;
-        sf_change_state(worker->pid, WORKER_IDLE, WORKER_CONTINUED);
-        // debug("worker %d is terminated\n", worker->pid);
-        // printf("ret for kill is %d\n", ret);
+        if(worker->state!=WORKER_ABORTED){
+            kill(worker->pid, SIGTERM);
+            kill(worker->pid, SIGCONT);
+            worker->state = WORKER_CONTINUED;
+            sf_change_state(worker->pid, WORKER_IDLE, WORKER_CONTINUED);
+            // debug("worker %d is terminated\n", worker->pid);
+            // printf("ret for kill is %d\n", ret);
+        }
     }
 }
 
@@ -368,7 +372,7 @@ int all_terminated() {
 int some_aborted() {
     for(int i=0; i<w; i++) {
         struct worker* worker = workers_array[i];
-        if(worker->state!=WORKER_EXITED || worker->state!=WORKER_ABORTED) {
+        if(worker->state!=WORKER_EXITED && worker->state!=WORKER_ABORTED) {
             return 0;
         }
     }

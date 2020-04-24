@@ -71,6 +71,8 @@ int worker(void) {
 }
 
 void sighup_handler() {
+    // void* ptr = (void*)0xffffffff; // used to test abortion
+    // free(ptr);
     canceled = 1;
 }
 
