@@ -29,6 +29,7 @@ int all_idle();
 void terminate_all();
 int all_terminated();
 int some_aborted();
+void free_workers();
 
 /*
  * master
@@ -50,11 +51,13 @@ int master(int workers) {
 
     // add signal handlers: SIGCHILD
     if(signal(SIGCHLD, sigchild_handler)==SIG_ERR){
-        perror("signal error");
+        debug("signal error");
+        exit(EXIT_FAILURE);
     }
 
     if(signal(SIGPIPE, SIG_IGN)==SIG_ERR){ // ignore SIGPIPE???
-        perror("signal error");
+        debug("signal error");
+        exit(EXIT_FAILURE);
     }
 
     // block SIGCHLD
@@ -69,13 +72,13 @@ int master(int workers) {
 
         int rd_pipe[2]; // pipe for reading from child
         if( pipe(rd_pipe)<0 ) {
-            perror("Can't create pipe");
+            debug("Can't create pipe");
             exit(EXIT_FAILURE);
         }
 
         int wt_pipe[2]; // pipe for writing to child
         if( pipe(wt_pipe)<0 ) {
-            perror("Can't create pipe");
+            debug("Can't create pipe");
             exit(EXIT_FAILURE);
         }
 
@@ -93,7 +96,7 @@ int master(int workers) {
             // debug("execute worker %d", i);
             char* argv[] = {NULL};
             if( execv("bin/polya_worker", argv )<0 ){
-                perror("exec error\n");
+                debug("exec error\n");
                 exit(EXIT_FAILURE);
             }
         } else { // parent
@@ -101,13 +104,13 @@ int master(int workers) {
             close(wt_pipe[0]); // close read side of the write pipe
 
             if( (rd = fdopen(rd_pipe[0], "r"))==NULL ){
-                perror("Master can't create input stream");
-                exit(1);
+                debug("Master can't create input stream");
+                exit(EXIT_FAILURE);
             }
 
             if( (wt = fdopen(wt_pipe[1], "w"))==NULL ){
-                perror("Master can't create output stream");
-                exit(1);
+                debug("Master can't create output stream");
+                exit(EXIT_FAILURE);
             }
 
             struct worker* child = malloc(sizeof(struct worker));
@@ -145,6 +148,10 @@ int master(int workers) {
                 FILE* rd = worker->rd;
                 fread(res, sizeof(struct result), 1, rd); // get the header for the result
                 res = realloc(res, res->size); // reallocate
+                if(res==NULL){
+                    debug("realloc error");
+                    exit(EXIT_FAILURE);
+                }
                 void* ptr = (char*)res + sizeof(struct result);
                 fread(ptr, res->size - sizeof(struct result), 1, rd); // get the remaining for the result
                 sf_recv_result(worker->pid, res);
@@ -157,11 +164,13 @@ int master(int workers) {
                         debug("a signal has arrived");
                     }
                     idle_all();
+                    free(res);
                     break;
                 }
                 worker->state = WORKER_IDLE; // set the state of the stopped child to idle
                 sf_change_state(worker->pid, WORKER_STOPPED, WORKER_IDLE);
                 worker->p = NULL;
+                free(res);
             }
         }
 
@@ -233,10 +242,12 @@ int master(int workers) {
         debug("a signal has arrived");
         if(all_terminated()) { // check if all children are terminated
             debug("all children are terminated\n");
+            // free_workers();
             sf_end();
             return EXIT_SUCCESS;
         } else if(some_aborted()) {
             debug("some children are aborted\n");
+            // free_workers();
             sf_end();
             return EXIT_FAILURE;
         } else {
@@ -377,4 +388,12 @@ int some_aborted() {
         }
     }
     return 1;
+}
+
+void free_workers() {
+    for(int i=0; i<w; i++) {
+        struct worker* worker = workers_array[i];
+        free(worker);
+    }
+    free(workers_array);
 }

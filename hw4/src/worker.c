@@ -19,10 +19,12 @@ int worker(void) {
     // debug("worker %d initilized!\n", getpid());
     // add signal handlers: SIGHUP & SIGTERM
     if(signal(SIGHUP, sighup_handler)==SIG_ERR){
-        perror("signal error");
+        debug("signal error");
+        exit(EXIT_FAILURE);
     }
     if(signal(SIGTERM, sigterm_handler)==SIG_ERR){
-        perror("signal error");
+        debug("signal error");
+        exit(EXIT_FAILURE);
     }
 
     // stop
@@ -34,9 +36,17 @@ int worker(void) {
         // read problem
         // debug("Worker reading result");
         struct problem* header = malloc(sizeof(struct problem));
+        if(header==NULL){
+            debug("malloc error");
+            exit(EXIT_FAILURE);
+        }
         fread(header, sizeof(struct problem), 1, stdin); // read the header
         size_t size = header->size;
         struct problem* p = malloc(size);
+        if(p==NULL){
+            debug("malloc error");
+            exit(EXIT_FAILURE);
+        }
         memcpy(p, header, sizeof(struct problem));
         free(header);
         void* ptr = (char*)p+sizeof(struct problem);
@@ -48,6 +58,10 @@ int worker(void) {
         struct result* res = (*solver)(p, &canceled); // ???
         if(res == NULL){ // if the solver fails or is canceled
             res = malloc(sizeof(struct result));
+            if(res==NULL){
+                debug("malloc error");
+                exit(EXIT_FAILURE);
+            }
             res->size = sizeof(struct result);
             res->id = p->id;
             res->failed = 1;
