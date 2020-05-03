@@ -58,7 +58,7 @@ int main(int argc, char* argv[]){
     while(1) {
         connfdp = Malloc(sizeof(int));
         *connfdp = Accept(listenfd, (SA *)&clientaddr, &clientlen);
-        Pthread_create(&tid, NULL, pbx_client_service, NULL);
+        Pthread_create(&tid, NULL, pbx_client_service, connfdp);
     }
 
     fprintf(stderr, "You have to finish implementing main() "
