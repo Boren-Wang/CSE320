@@ -6,6 +6,7 @@
 #include "debug.h"
 
 void *pbx_client_service(void *arg) {
+    debug("start");
     int connfd = *( (int*)arg );
     Pthread_detach(pthread_self());
     Free(arg);
@@ -16,12 +17,18 @@ void *pbx_client_service(void *arg) {
     // service loop
     FILE* read = fdopen(connfd, "r");
     while(1) {
+        debug("service loop");
         char c;
         char* line;
         line = malloc(10);
+        if(line==NULL) {
+            debug("malloc error");
+        }
         int i = 0; // index
         size_t len = 10; // length of the line
-        while( ( c = fgetc(read))!=EOF || c!='\r' ) { // read the line
+        debug("about to read the line");
+        while( ( c = fgetc(read))!=EOF && c!='\r' ) { // read the line
+            debug("reading the line");
             if(i==len) {
                 len += 10;
                 line = realloc(line, len);
@@ -29,6 +36,7 @@ void *pbx_client_service(void *arg) {
             line[i] = c;
             i++;
         }
+        debug("finish reading the line");
         if(c=='\r') {
             if( (c=fgetc(read)=='\n') ) {
                 if(i==len) {
@@ -38,8 +46,10 @@ void *pbx_client_service(void *arg) {
                 line[i++] = '\0';
             }
         }
+        debug("line is %s", line);
 
         // parse the line
+        debug("start to parse the line");
         if( strcmp(line, "pickup")==0 ) {
             int ret;
             if( (ret = tu_pickup(tu))==-1 ) {
@@ -51,6 +61,7 @@ void *pbx_client_service(void *arg) {
                 debug("tu_hangup error");
             }
         } else if( line[0]=='d' && line[1]=='i' && line[2]=='a' && line[3]=='l' && line[4]==' ' ) {
+            debug("dial block");
             i = 5;
             int number = 0;
             int valid = 1;
@@ -62,6 +73,7 @@ void *pbx_client_service(void *arg) {
                 } else {
                     number *= 10;
                     number += (c-'0');
+                    i++;
                 }
             }
             if(valid) {
@@ -73,6 +85,7 @@ void *pbx_client_service(void *arg) {
                 debug("invalid input: number contains non-digit");
             }
         } else if( line[0]=='c' && line[1]=='h' && line[2]=='a' && line[3]=='t' && line[4]==' ' ) {
+            debug("chat block");
             char* chat = &line[5];
             int ret;
             if( (ret = tu_chat(tu, chat))==-1 ) {
