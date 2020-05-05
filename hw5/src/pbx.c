@@ -17,7 +17,8 @@ struct tu {
     TU* connection;
 };
 
-
+void notify_state(int fd, TU_STATE state);
+void notify_on_hook(int fd, int ext);
 
 /*
  * Initialize a new PBX.
@@ -54,7 +55,7 @@ PBX *pbx_init() {
  * @param pbx  The PBX to be shut down.
  */
 void pbx_shutdown(PBX *pbx) {
-
+    return;
 }
 
 /*
@@ -81,6 +82,7 @@ TU *pbx_register(PBX *pbx, int fd) {
         if( clients[i] == NULL ){
             tu->ext = i;
             clients[i] = tu;
+            notify_on_hook(fd, tu->ext);
             break;
         }
     }
@@ -157,8 +159,7 @@ int tu_extension(TU *tu) {
  * and would result in 0 being returned.
  */
 int tu_pickup(TU *tu) {
-    int fd = tu->fd;
-    FILE* write = fdopen(fd, "w");
+    P(&(pbx->mutex));
     if(tu->state==TU_ON_HOOK) {
         tu->state = TU_DIAL_TONE;
     } else if(tu->state==TU_RINGING) {
@@ -167,11 +168,12 @@ int tu_pickup(TU *tu) {
         connection->state = TU_CONNECTED;
 
         // the calling TU is also notified of its new state
-        fputs(tu_state_names[TU_CONNECTED], fdopen(connection->fd, "w"));
+        notify_state(connection->fd, connection->state);
     }
 
     // send a notification of the new state to the client
-    fputs(tu_state_names[tu->state], write);
+    notify_state(tu->fd, tu->state);
+    V(&(pbx->mutex));
     return 0;
     // return -1 ???
 }
@@ -204,10 +206,13 @@ int tu_pickup(TU *tu) {
  * and would result in 0 being returned.
  */
 int tu_hangup(TU *tu) {
+    P(&(pbx->mutex));
     if(tu->state == TU_CONNECTED) {
         TU* connection = tu->connection;
         tu->state = TU_ON_HOOK;
         connection->state = TU_DIAL_TONE;
+        // notify the connection of its new state
+        notify_state(connection->fd, connection->state);
         // change connection fields to NULL
         tu->connection=NULL;
         connection->connection=NULL;
@@ -215,6 +220,8 @@ int tu_hangup(TU *tu) {
         TU* connection = tu->connection;
         tu->state = TU_ON_HOOK;
         connection->state = TU_ON_HOOK;
+        // notify the connection of its new state
+        notify_on_hook(connection->fd, connection->ext);
         // change connection fields to NULL
         tu->connection=NULL;
         connection->connection=NULL;
@@ -222,6 +229,8 @@ int tu_hangup(TU *tu) {
         TU* connection = tu->connection;
         tu->state = TU_ON_HOOK;
         connection->state = TU_DIAL_TONE;
+        // notify the connection of its new state
+        notify_state(connection->fd, connection->state);
         // change connection fields to NULL
         tu->connection=NULL;
         connection->connection=NULL;
@@ -230,6 +239,14 @@ int tu_hangup(TU *tu) {
     }
 
     // notification
+    if(tu->state==TU_ON_HOOK) {
+        notify_on_hook(tu->fd, tu->ext);
+    } else {
+        notify_state(tu->fd, tu->state);
+    }
+
+    V(&(pbx->mutex));
+
     return 0;
 }
 
@@ -260,6 +277,7 @@ int tu_hangup(TU *tu) {
  * and would result in 0 being returned.
  */
 int tu_dial(TU *tu, int ext) {
+    P(&(pbx->mutex));
     TU** clients = pbx->registry;
     TU* dialed = clients[ext];
     if(dialed==NULL) {
@@ -275,19 +293,22 @@ int tu_dial(TU *tu, int ext) {
             tu->state = TU_BUSY_SIGNAL;
         }
     }
+
     // In all cases, a notification of the new state is sent
     // to the network client underlying this TU.
-    int fd_tu = tu->fd;
-    FILE* wt_tu = fdopen(fd_tu, "w");
-    fputs(tu_state_names[tu->state], wt_tu);
+    if(tu->state == TU_ON_HOOK) {
+        notify_on_hook(tu->fd, tu->ext);
+    } else {
+        notify_state(tu->fd, tu->state);
+    }
 
     // In addition, if the new state is TU_RING_BACK,
     // then the called extension is also notified of its new state (i.e. TU_RINGING).
     if(tu->state == TU_RING_BACK) {
-        int fd_dialed = dialed->fd;
-        FILE* wt_dialed = fdopen(fd_dialed, "w");
-        fputs(tu_state_names[dialed->state], wt_dialed);
+        notify_state(dialed->fd, dialed->state);
     }
+
+    V(&(pbx->mutex));
 
     return 0;
     // return -1 ???
@@ -309,10 +330,26 @@ int tu_chat(TU *tu, char *msg) {
     if(tu->state!=TU_CONNECTED) {
         return -1;
     } else {
+        P(&(pbx->mutex));
         TU* connection = tu->connection;
         int fd = connection->fd;
         FILE* wt = fdopen(fd, "w");
-        fputs(msg, wt);
+        fprintf(wt, "%s\n", msg);
+        fflush(wt);
+        V(&(pbx->mutex));
         return 0;
     }
+}
+
+void notify_state(int fd, TU_STATE state) {
+    FILE* wt = fdopen(fd, "w");
+    fprintf(wt, "%s\n", tu_state_names[state]);
+    fflush(wt);
+}
+
+void notify_on_hook(int fd, int ext) {
+    FILE* wt = fdopen(fd, "w");
+    char* notification = tu_state_names[TU_ON_HOOK];
+    fprintf(wt, "%s %d\n", notification, ext);
+    fflush(wt);
 }

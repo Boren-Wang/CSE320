@@ -61,7 +61,7 @@ void *pbx_client_service(void *arg) {
                 debug("tu_hangup error");
             }
         } else if( line[0]=='d' && line[1]=='i' && line[2]=='a' && line[3]=='l' && line[4]==' ' ) {
-            debug("dial block");
+            debug("dial block starts");
             i = 5;
             int number = 0;
             int valid = 1;
@@ -77,6 +77,7 @@ void *pbx_client_service(void *arg) {
                 }
             }
             if(valid) {
+                debug("valid number");
                 int ret;
                 if( (ret = tu_dial(tu, number))==-1 ) {
                     debug("tu_dial error");
@@ -84,6 +85,7 @@ void *pbx_client_service(void *arg) {
             } else {
                 debug("invalid input: number contains non-digit");
             }
+            debug("dial block ends");
         } else if( line[0]=='c' && line[1]=='h' && line[2]=='a' && line[3]=='t' && line[4]==' ' ) {
             debug("chat block");
             char* chat = &line[5];
@@ -96,7 +98,8 @@ void *pbx_client_service(void *arg) {
         }
         free(line);
     }
-
+    pbx_unregister(pbx, tu);
+    fclose(read);
     Close(connfd);
     return NULL;
 }
