@@ -44,6 +44,20 @@ void *pbx_client_service(void *arg) {
                     line = realloc(line, len);
                 }
                 line[i++] = '\0';
+            } else if(c==EOF){
+                // debug("EOF after \r");
+                // break; //EOF
+                if( (c=fgetc(read)==EOF) ) {
+                    debug("EOF after \r");
+                    break; //EOF
+                }
+            }
+        }  else if(c==EOF) {
+            // debug("EOF");
+            // break; // EOF
+            if( (c=fgetc(read)==EOF) ) {
+                debug("EOF");
+                break; // EOF
             }
         }
         debug("line is %s", line);
@@ -51,11 +65,13 @@ void *pbx_client_service(void *arg) {
         // parse the line
         debug("start to parse the line");
         if( strcmp(line, "pickup")==0 ) {
+            debug("pickup");
             int ret;
             if( (ret = tu_pickup(tu))==-1 ) {
                 debug("tu_pickup error");
             }
         } else if( strcmp(line, "hangup")==0 ) {
+            debug("hangup");
             int ret;
             if( (ret = tu_hangup(tu))==-1 ) {
                 debug("tu_hangup error");
@@ -86,7 +102,7 @@ void *pbx_client_service(void *arg) {
                 debug("invalid input: number contains non-digit");
             }
             debug("dial block ends");
-        } else if( line[0]=='c' && line[1]=='h' && line[2]=='a' && line[3]=='t' && line[4]==' ' ) {
+        } else if( line[0]=='c' && line[1]=='h' && line[2]=='a' && line[3]=='t' ) {
             debug("chat block");
             char* chat = &line[5];
             int ret;
@@ -99,7 +115,7 @@ void *pbx_client_service(void *arg) {
         free(line);
     }
     pbx_unregister(pbx, tu);
-    fclose(read);
-    Close(connfd);
+    fclose(read); // ???
+    // Close(connfd); // ???
     return NULL;
 }

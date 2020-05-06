@@ -8,6 +8,7 @@
 struct pbx {
     TU** registry;
     sem_t mutex;
+    size_t threads;
 };
 
 struct tu {
@@ -41,6 +42,7 @@ PBX *pbx_init() {
         pbx->registry[i] = NULL;
     }
     Sem_init(&(pbx->mutex), 0, 1);
+    pbx->threads = 0;
     return pbx;
 }
 
@@ -55,6 +57,21 @@ PBX *pbx_init() {
  * @param pbx  The PBX to be shut down.
  */
 void pbx_shutdown(PBX *pbx) {
+    TU** clients = pbx->registry;
+    for(int i=0; i<FD_SETSIZE; i++) {
+        if(clients[i]!=NULL) {
+            shutdown(clients[i]->fd, SHUT_RDWR);
+        }
+    }
+
+    // wait for all threads to terminate
+    while(pbx->threads>0) {
+        sleep(0.1);
+    }
+
+    // freeing
+    free(pbx->registry);
+    free(pbx);
     return;
 }
 
@@ -83,6 +100,7 @@ TU *pbx_register(PBX *pbx, int fd) {
             tu->ext = i;
             clients[i] = tu;
             notify_on_hook(fd, tu->ext);
+            pbx->threads++;
             break;
         }
     }
@@ -107,6 +125,7 @@ int pbx_unregister(PBX *pbx, TU *tu) {
         P( &(pbx->mutex) );
         pbx->registry[i] = NULL;
         free(tu);
+        pbx->threads++;
         V( &(pbx->mutex) );
         return 0;
     }
@@ -319,7 +338,8 @@ int tu_dial(TU *tu, int ext) {
  *
  * If the state of the TU is not TU_CONNECTED, then nothing is sent and -1 is returned.
  * Otherwise, the specified message is sent via the network connection to the peer TU.
- * In all cases, the states of the TUs are left unchanged.
+ * In all cases, the states of the TUs are left unchanged and a notification containing
+ * the current state is sent to the TU sending the chat.
  *
  * @param tu  The tu sending the chat.
  * @param msg  The message to be sent.
@@ -327,7 +347,12 @@ int tu_dial(TU *tu, int ext) {
  * or some other error occurs.
  */
 int tu_chat(TU *tu, char *msg) {
-    if(tu->state!=TU_CONNECTED) {
+    if( tu->state!=TU_CONNECTED ) {
+        if(tu->state==TU_ON_HOOK) {
+            notify_on_hook(tu->fd, tu->ext);
+        } else {
+            notify_state(tu->fd, tu->state);
+        }
         return -1;
     } else {
         P(&(pbx->mutex));
@@ -336,6 +361,11 @@ int tu_chat(TU *tu, char *msg) {
         FILE* wt = fdopen(fd, "w");
         fprintf(wt, "%s\n", msg);
         fflush(wt);
+        if(tu->state==TU_ON_HOOK) {
+            notify_on_hook(tu->fd, tu->ext);
+        } else {
+            notify_state(tu->fd, tu->state);
+        }
         V(&(pbx->mutex));
         return 0;
     }
