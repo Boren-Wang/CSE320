@@ -11,6 +11,7 @@
 #define PBX_H
 
 #include <unistd.h>
+#include <sys/select.h>
 
 /*
  * Structure types representing objects manipulated by the PBX module.
@@ -208,7 +209,8 @@ int tu_dial(TU *tu, int ext);
  *
  * If the state of the TU is not TU_CONNECTED, then nothing is sent and -1 is returned.
  * Otherwise, the specified message is sent via the network connection to the peer TU.
- * In all cases, the states of the TUs are left unchanged.
+ * In all cases, the states of the TUs are left unchanged and a notification containing
+ * the current state is sent to the TU sending the chat.
  *
  * @param tu  The tu sending the chat.
  * @param msg  The message to be sent.

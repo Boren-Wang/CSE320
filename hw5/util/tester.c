@@ -87,53 +87,55 @@ double action_probs[NUM_STATES][NUM_COMMANDS] = {
 
 int next_states[NUM_STATES][NUM_COMMANDS] = {
   [TU_ON_HOOK] {
-      1<<TU_DIAL_TONE | 1<<(TU_RINGING+RESYNC),                             // TU_PICKUP_CMD
+      1<<TU_DIAL_TONE | 1<<(TU_RINGING+RESYNC) | 1<<(TU_ON_HOOK+RESYNC),    // TU_PICKUP_CMD
       1<<TU_ON_HOOK | 1<<(TU_RINGING+RESYNC),                               // TU_HANGUP_CMD
       1<<TU_ON_HOOK | 1<<(TU_RINGING+RESYNC),                               // TU_DIAL_CMD
-      1<<TU_ON_HOOK | 1<<TU_RINGING,                                        // TU_CHAT_CMD
-      1<<TU_ON_HOOK | 1<<TU_RINGING                                         // DELAY
+      1<<TU_ON_HOOK | 1<<(TU_RINGING+RESYNC),                               // TU_CHAT_CMD
+      1<<(TU_ON_HOOK+RESYNC) | 1<<(TU_RINGING+RESYNC)                       // DELAY
   },
   [TU_RINGING] {
-      1<<TU_CONNECTED | 1<<(TU_ON_HOOK+RESYNC),                             // TU_PICKUP_CMD
-      1<<TU_RINGING | 1<<(TU_ON_HOOK+RESYNC),                               // TU_HANGUP_CMD
+      1<<TU_CONNECTED | 1<<(TU_ON_HOOK+RESYNC) | 1<<(TU_RINGING+RESYNC),    // TU_PICKUP_CMD
+      1<<TU_ON_HOOK | 1<<(TU_RINGING+RESYNC),                               // TU_HANGUP_CMD
       1<<TU_RINGING | 1<<(TU_ON_HOOK+RESYNC),                               // TU_DIAL_CMD
-      1<<TU_RINGING | 1<<TU_ON_HOOK,                                        // TU_CHAT_CMD
-      1<<TU_RINGING | 1<<TU_ON_HOOK                                         // DELAY
+      1<<TU_RINGING | 1<<(TU_ON_HOOK+RESYNC),                               // TU_CHAT_CMD
+      1<<(TU_RINGING+RESYNC) | 1<<(TU_ON_HOOK+RESYNC)                       // DELAY
   },
   [TU_DIAL_TONE] {
       1<<TU_DIAL_TONE,                                                      // TU_PICKUP_CMD
-      1<<TU_ON_HOOK,                                                        // TU_HANGUP_CMD
-      1<<TU_RING_BACK | 1<<TU_BUSY_SIGNAL | 1<<TU_ERROR,                    // TU_DIAL_CMD
+      1<<TU_ON_HOOK | 1<<(TU_DIAL_TONE+RESYNC),                             // TU_HANGUP_CMD
+      1<<TU_RING_BACK | 1<<TU_BUSY_SIGNAL | 1<<TU_ERROR
+                      | 1<<(TU_DIAL_TONE+RESYNC),                           // TU_DIAL_CMD
       1<<TU_DIAL_TONE,                                                      // TU_CHAT_CMD
-      1<<TU_DIAL_TONE                                                       // DELAY
+      1<<(TU_DIAL_TONE+RESYNC)                                              // DELAY
   },
   [TU_RING_BACK] {
       1<<TU_RING_BACK | 1<<(TU_CONNECTED+RESYNC) | 1<<(TU_DIAL_TONE+RESYNC),// TU_PICKUP_CMD
-      1<<TU_ON_HOOK | 1<<(TU_CONNECTED+RESYNC) | 1<<(TU_DIAL_TONE+RESYNC),  // TU_HANGUP_CMD
+      1<<TU_ON_HOOK | 1<<(TU_CONNECTED+RESYNC) | 1<<(TU_DIAL_TONE+RESYNC)
+                    | 1<<(TU_RING_BACK+RESYNC),                             // TU_HANGUP_CMD
       1<<TU_RING_BACK | 1<<(TU_CONNECTED+RESYNC) | 1<<(TU_DIAL_TONE+RESYNC),// TU_DIAL_CMD
-      1<<TU_RING_BACK | 1<<TU_CONNECTED,                                    // TU_CHAT_CMD
-      1<<TU_RING_BACK | 1<<TU_CONNECTED | 1<<TU_DIAL_TONE                   // DELAY
+      1<<TU_RING_BACK | 1<<(TU_CONNECTED+RESYNC) | 1<<(TU_DIAL_TONE+RESYNC),// TU_CHAT_CMD
+      1<<(TU_RING_BACK+RESYNC) | 1<<(TU_CONNECTED+RESYNC) | 1<<(TU_DIAL_TONE+RESYNC) // DELAY
   },
   [TU_BUSY_SIGNAL] {
       1<<TU_BUSY_SIGNAL,                                                    // TU_PICKUP_CMD
-      1<<TU_ON_HOOK,                                                        // TU_HANGUP_CMD
+      1<<TU_ON_HOOK | 1<<(TU_BUSY_SIGNAL+RESYNC),                           // TU_HANGUP_CMD
       1<<TU_BUSY_SIGNAL,                                                    // TU_DIAL_CMD
       1<<TU_BUSY_SIGNAL,                                                    // TU_CHAT_CMD
-      1<<TU_BUSY_SIGNAL                                                     // DELAY
+      1<<(TU_BUSY_SIGNAL+RESYNC)                                            // DELAY
   },
   [TU_CONNECTED] {
-      1<<TU_CONNECTED | 1<<(TU_DIAL_TONE+RESYNC),                           // TU_PICKUP_CMD
-      1<<TU_ON_HOOK | 1<<(TU_DIAL_TONE+RESYNC),                             // TU_HANGUP_CMD
+      1<<TU_CONNECTED | 1<<(TU_DIAL_TONE+RESYNC) | 1<<(TU_CONNECTED+RESYNC),// TU_PICKUP_CMD
+      1<<TU_ON_HOOK | 1<<(TU_DIAL_TONE+RESYNC) | 1<<(TU_CONNECTED+RESYNC),  // TU_HANGUP_CMD
       1<<TU_CONNECTED | 1<<(TU_DIAL_TONE+RESYNC),                           // TU_DIAL_CMD
-      1<<TU_CONNECTED | 1<<TU_DIAL_TONE,                                    // TU_CHAT_CMD
-      1<<TU_CONNECTED | 1<<TU_DIAL_TONE                                     // DELAY
+      1<<TU_CONNECTED | 1<<(TU_DIAL_TONE+RESYNC),                           // TU_CHAT_CMD
+      1<<(TU_CONNECTED+RESYNC) | 1<<(TU_DIAL_TONE+RESYNC)                   // DELAY
   },
   [TU_ERROR] {
       1<<TU_ERROR,                                                          // TU_PICKUP_CMD
-      1<<TU_ON_HOOK,                                                        // TU_HANGUP_CMD
+      1<<TU_ON_HOOK | 1<<(TU_ERROR+RESYNC),                                 // TU_HANGUP_CMD
       1<<TU_ERROR,                                                          // TU_DIAL_CMD
       1<<TU_ERROR,                                                          // TU_CHAT_CMD
-      1<<TU_ERROR                                                           // DELAY
+      1<<(TU_ERROR+RESYNC)                                                  // DELAY
   }
 };
 
@@ -157,7 +159,7 @@ int resync;
  * to determine a new set of expected states as each successive asynchronous
  * notification is received.
  */
-TU_COMMAND last_command;
+TU_COMMAND last_command = TU_HANGUP_CMD;
 
 /* Option variables. */
 int port = PORT;
