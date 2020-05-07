@@ -104,7 +104,12 @@ void *pbx_client_service(void *arg) {
             debug("dial block ends");
         } else if( line[0]=='c' && line[1]=='h' && line[2]=='a' && line[3]=='t' ) {
             debug("chat block");
-            char* chat = &line[5];
+            char* chat;
+            if(line[4]==' ') {
+                chat = &line[5];
+            } else {
+                chat = &line[4];
+            }
             int ret;
             if( (ret = tu_chat(tu, chat))==-1 ) {
                 debug("tu_chat error");
@@ -115,7 +120,7 @@ void *pbx_client_service(void *arg) {
         free(line);
     }
     pbx_unregister(pbx, tu);
-    fclose(read); // ???
+    // fclose(read); // ???
     // Close(connfd); // ???
     return NULL;
 }
