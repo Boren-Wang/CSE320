@@ -42,7 +42,9 @@ PBX *pbx_init() {
     for(int i=0; i<PBX_MAX_EXTENSIONS; i++) {
         pbx->registry[i] = NULL;
     }
-    Sem_init(&(pbx->mutex), 0, 1);
+    if(sem_init(&(pbx->mutex), 0, 1) < 0) {
+        debug("sem_init error");
+    }
     pbx->threads = 0;
     return pbx;
 }
@@ -153,6 +155,9 @@ int pbx_unregister(PBX *pbx, TU *tu) {
  * @return the underlying file descriptor, if any, otherwise -1.
  */
 int tu_fileno(TU *tu) {
+    if(tu==NULL) {
+        return -1;
+    }
     return tu->fd;
 }
 
@@ -167,6 +172,9 @@ int tu_fileno(TU *tu) {
  * @return the extension number, if any, otherwise -1.
  */
 int tu_extension(TU *tu) {
+    if(tu==NULL) {
+        return -1;
+    }
     return tu->ext;
 }
 
@@ -275,6 +283,7 @@ int tu_hangup(TU *tu) {
     V(&(pbx->mutex));
 
     return 0;
+    // return -1 ???
 }
 
 /*
@@ -366,6 +375,7 @@ int tu_chat(TU *tu, char *msg) {
         notify(tu);
         V(&(pbx->mutex));
         return 0;
+        // return -1 ???
     }
 }
 
