@@ -17,7 +17,8 @@ void *pbx_client_service(void *arg) {
 
     // register the client file descriptor
     TU* tu = pbx_register(pbx, connfd);
-    if(tu==NULL) { // if there is no availble ext
+    if(tu==NULL) { // if there is no more availble ext
+        debug("No more availble extensions");
         return NULL;
     }
 

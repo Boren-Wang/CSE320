@@ -106,6 +106,7 @@ TU *pbx_register(PBX *pbx, int fd) {
             return tu;
         }
     }
+    debug("unable to register");
     return NULL;
 }
 
