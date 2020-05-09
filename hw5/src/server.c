@@ -63,6 +63,7 @@ void *pbx_client_service(void *arg) {
                 // break; //EOF
                 if( (c=fgetc(read)==EOF) ) {
                     debug("EOF after \r");
+                    free(line);
                     break; //EOF
                 }
             }
@@ -71,6 +72,7 @@ void *pbx_client_service(void *arg) {
             // break; // EOF
             if( (c=fgetc(read)==EOF) ) {
                 debug("EOF");
+                free(line);
                 break; // EOF
             }
         }
@@ -136,5 +138,6 @@ void *pbx_client_service(void *arg) {
     pbx_unregister(pbx, tu);
     fclose(read);
     // close(connfd); // ???
+    debug("thread ends");
     return NULL;
 }
