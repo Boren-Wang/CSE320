@@ -4,15 +4,22 @@
 #include "csapp.h"
 #include "pbx.h"
 #include "debug.h"
+#include "server.h"
 
 void *pbx_client_service(void *arg) {
     debug("start");
     int connfd = *( (int*)arg );
-    Pthread_detach(pthread_self());
-    Free(arg);
+    int ret;
+    if ((ret = pthread_detach(pthread_self())) != 0) {
+        debug("pthread_detach error");
+    }
+    free(arg);
 
     // register the client file descriptor
     TU* tu = pbx_register(pbx, connfd);
+    if(tu==NULL) { // if there is no availble ext
+        return NULL;
+    }
 
     // service loop
     FILE* read = fdopen(connfd, "r");
@@ -32,6 +39,9 @@ void *pbx_client_service(void *arg) {
             if(i==len) {
                 len += 10;
                 line = realloc(line, len);
+                if(line == NULL) {
+                    debug("realloc error");
+                }
             }
             line[i] = c;
             i++;
@@ -42,6 +52,9 @@ void *pbx_client_service(void *arg) {
                 if(i==len) {
                     len += 10;
                     line = realloc(line, len);
+                    if(line == NULL) {
+                        debug("realloc error");
+                    }
                 }
                 line[i++] = '\0';
             } else if(c==EOF){
@@ -64,13 +77,13 @@ void *pbx_client_service(void *arg) {
 
         // parse the line
         debug("start to parse the line");
-        if( strcmp(line, "pickup")==0 ) {
+        if( strcmp(line, tu_command_names[TU_PICKUP_CMD])==0 ) {
             debug("pickup");
             int ret;
             if( (ret = tu_pickup(tu))==-1 ) {
                 debug("tu_pickup error");
             }
-        } else if( strcmp(line, "hangup")==0 ) {
+        } else if( strcmp(line, tu_command_names[TU_HANGUP_CMD])==0 ) {
             debug("hangup");
             int ret;
             if( (ret = tu_hangup(tu))==-1 ) {
@@ -104,14 +117,14 @@ void *pbx_client_service(void *arg) {
             debug("dial block ends");
         } else if( line[0]=='c' && line[1]=='h' && line[2]=='a' && line[3]=='t' ) {
             debug("chat block");
-            char* chat;
+            char* msg;
             if(line[4]==' ') {
-                chat = &line[5];
+                msg = &line[5];
             } else {
-                chat = &line[4];
+                msg = &line[4];
             }
             int ret;
-            if( (ret = tu_chat(tu, chat))==-1 ) {
+            if( (ret = tu_chat(tu, msg))==-1 ) {
                 debug("tu_chat error");
             }
         } else { // invalid input
@@ -120,7 +133,7 @@ void *pbx_client_service(void *arg) {
         free(line);
     }
     pbx_unregister(pbx, tu);
-    // fclose(read); // ???
-    // Close(connfd); // ???
+    fclose(read);
+    // close(connfd); // ???
     return NULL;
 }

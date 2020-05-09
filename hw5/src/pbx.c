@@ -33,13 +33,13 @@ PBX *pbx_init() {
         debug("malloc error");
         return NULL;
     }
-    pbx->registry = malloc(FD_SETSIZE*sizeof(struct tu*)); // Maximum number of extensions supported by a PBX.
+    pbx->registry = malloc(PBX_MAX_EXTENSIONS*sizeof(struct tu*)); // Maximum number of extensions supported by a PBX.
     if(pbx->registry==NULL) {
         debug("malloc error");
         free(pbx);
         return NULL;
     }
-    for(int i=0; i<FD_SETSIZE; i++) {
+    for(int i=0; i<PBX_MAX_EXTENSIONS; i++) {
         pbx->registry[i] = NULL;
     }
     Sem_init(&(pbx->mutex), 0, 1);
@@ -59,7 +59,7 @@ PBX *pbx_init() {
  */
 void pbx_shutdown(PBX *pbx) {
     TU** clients = pbx->registry;
-    for(int i=0; i<FD_SETSIZE; i++) {
+    for(int i=0; i<PBX_MAX_EXTENSIONS; i++) {
         if(clients[i]!=NULL) {
             shutdown(clients[i]->fd, SHUT_RDWR);
         }
@@ -67,6 +67,7 @@ void pbx_shutdown(PBX *pbx) {
 
     // wait for all threads to terminate
     while(pbx->threads>0) {
+        debug("number of threads is %ld", pbx->threads);
         sleep(0.1);
     }
 
@@ -90,24 +91,22 @@ void pbx_shutdown(PBX *pbx) {
  * that was returned.
  */
 TU *pbx_register(PBX *pbx, int fd) {
-    TU* tu = malloc(sizeof(TU));
-    tu->fd = fd;
-    tu->state = TU_ON_HOOK;
-
     TU** clients = pbx->registry;
-    P( &(pbx->mutex) );
-    for(int i=0; i<FD_SETSIZE; i++) {
+    for(int i=0; i<PBX_MAX_EXTENSIONS; i++) {
         if( clients[i] == NULL ){
+            P( &(pbx->mutex) );
+            TU* tu = malloc(sizeof(TU));
+            tu->fd = fd;
+            tu->state = TU_ON_HOOK;
             tu->ext = i;
             clients[i] = tu;
-            // notify_on_hook(fd, tu->ext);
             notify(tu);
             pbx->threads++;
-            break;
+            V( &(pbx->mutex) );
+            return tu;
         }
     }
-    V( &(pbx->mutex) );
-    return tu;
+    return NULL;
 }
 
 /*
@@ -137,7 +136,7 @@ int pbx_unregister(PBX *pbx, TU *tu) {
             notify(tu->connection);
         }
         free(tu);
-        pbx->threads++;
+        pbx->threads--;
         V( &(pbx->mutex) );
         return 0;
     }
@@ -199,12 +198,10 @@ int tu_pickup(TU *tu) {
         connection->state = TU_CONNECTED;
 
         // the calling TU is also notified of its new state
-        // notify_state(connection->fd, connection->state);
         notify(connection);
     }
 
     // send a notification of the new state to the client
-    // notify_state(tu->fd, tu->state);
     notify(tu);
     V(&(pbx->mutex));
     return 0;
@@ -245,7 +242,6 @@ int tu_hangup(TU *tu) {
         tu->state = TU_ON_HOOK;
         connection->state = TU_DIAL_TONE;
         // notify the connection of its new state
-        // notify_state(connection->fd, connection->state);
         notify(connection);
         // change connection fields to NULL
         tu->connection=NULL;
@@ -255,7 +251,6 @@ int tu_hangup(TU *tu) {
         tu->state = TU_ON_HOOK;
         connection->state = TU_ON_HOOK;
         // notify the connection of its new state
-        // notify_on_hook(connection->fd, connection->ext);
         notify(connection);
         // change connection fields to NULL
         tu->connection=NULL;
@@ -265,7 +260,6 @@ int tu_hangup(TU *tu) {
         tu->state = TU_ON_HOOK;
         connection->state = TU_DIAL_TONE;
         // notify the connection of its new state
-        // notify_state(connection->fd, connection->state);
         notify(connection);
         // change connection fields to NULL
         tu->connection=NULL;
@@ -275,11 +269,6 @@ int tu_hangup(TU *tu) {
     }
 
     // notification
-    // if(tu->state==TU_ON_HOOK) {
-    //     notify_on_hook(tu->fd, tu->ext);
-    // } else {
-    //     notify_state(tu->fd, tu->state);
-    // }
     notify(tu);
 
     V(&(pbx->mutex));
@@ -332,17 +321,11 @@ int tu_dial(TU *tu, int ext) {
 
     // In all cases, a notification of the new state is sent
     // to the network client underlying this TU.
-    // if(tu->state == TU_ON_HOOK) {
-    //     notify_on_hook(tu->fd, tu->ext);
-    // } else {
-    //     notify_state(tu->fd, tu->state);
-    // }
     notify(tu);
 
     // In addition, if the new state is TU_RING_BACK,
     // then the called extension is also notified of its new state (i.e. TU_RINGING).
     if(tu->state == TU_RING_BACK) {
-        // notify_state(dialed->fd, dialed->state);
         notify(dialed);
     }
 
@@ -368,11 +351,6 @@ int tu_dial(TU *tu, int ext) {
 int tu_chat(TU *tu, char *msg) {
     if( tu->state!=TU_CONNECTED ) {
         P(&(pbx->mutex));
-        // if(tu->state==TU_ON_HOOK) {
-        //     notify_on_hook(tu->fd, tu->ext);
-        // } else {
-        //     notify_state(tu->fd, tu->state);
-        // }
         notify(tu);
         V(&(pbx->mutex));
         return -1;
@@ -383,34 +361,12 @@ int tu_chat(TU *tu, char *msg) {
         FILE* wt = fdopen(fd, "w");
         fprintf(wt, "CHAT %s\n", msg);
         fflush(wt);
-        // if(tu->state==TU_ON_HOOK) {
-        //     // notify_on_hook(tu->fd, tu->ext);
-        //     char* notification = tu_state_names[TU_ON_HOOK];
-        //     fprintf(wt, "%s %d\n", notification, tu->ext);
-        //     fflush(wt);
-        // } else {
-        //     // notify_state(tu->fd, tu->state);
-        //     fprintf(wt, "%s\n", tu_state_names[tu->state]);
-        //     fflush(wt);
-        // }
+        // fclose(wt);
         notify(tu);
         V(&(pbx->mutex));
         return 0;
     }
 }
-
-// void notify_state(int fd, TU_STATE state) {
-//     FILE* wt = fdopen(fd, "w");
-//     fprintf(wt, "%s\n", tu_state_names[state]);
-//     fflush(wt);
-// }
-
-// void notify_on_hook(int fd, int ext) {
-//     FILE* wt = fdopen(fd, "w");
-//     char* notification = tu_state_names[TU_ON_HOOK];
-//     fprintf(wt, "%s %d\n", notification, ext);
-//     fflush(wt);
-// }
 
 void notify(TU* tu) {
     FILE* wt = fdopen(tu->fd, "w");
@@ -423,4 +379,5 @@ void notify(TU* tu) {
         fprintf(wt, "%s\n", notification);
     }
     fflush(wt);
+    // fclose(wt);
 }

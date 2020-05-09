@@ -48,17 +48,33 @@ int main(int argc, char* argv[]){
     // run function pbx_client_service().  In addition, you should install
     // a SIGHUP handler, so that receipt of SIGHUP will perform a clean
     // shutdown of the server.
-    struct sigaction sa;
-    sa.sa_handler = sighup_handler;
-    if( sigaction(SIGHUP, &sa, NULL)==-1 ) {
+    struct sigaction action, old_action;
+    action.sa_handler = sighup_handler;
+    sigemptyset(&action.sa_mask);
+    action.sa_flags = SA_RESTART;
+
+    if( sigaction(SIGHUP, &action, &old_action) < 0 ) {
         debug("sigaction error");
     }
 
-    listenfd = Open_listenfd(port);
+    listenfd = open_listenfd(port);
+    if(listenfd<0) {
+        debug("open_listenfd error");
+    }
+
     while(1) {
-        connfdp = Malloc(sizeof(int));
-        *connfdp = Accept(listenfd, (SA *)&clientaddr, &clientlen);
-        Pthread_create(&tid, NULL, pbx_client_service, connfdp);
+        connfdp = malloc(sizeof(int));
+        if(connfdp==NULL) {
+            debug("malloc error");
+        }
+        *connfdp = accept(listenfd, (SA *)&clientaddr, &clientlen);
+        if(*connfdp<0) {
+            debug("accept error");
+        }
+        int ret;
+        if( (ret = pthread_create(&tid, NULL, pbx_client_service, connfdp))!=0 ) {
+            debug("pthread_create error");
+        }
     }
 
     fprintf(stderr, "You have to finish implementing main() "
