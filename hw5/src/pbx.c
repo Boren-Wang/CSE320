@@ -128,12 +128,14 @@ int pbx_unregister(PBX *pbx, TU *tu) {
         pbx->registry[i] = NULL;
         if(tu->state==TU_CONNECTED) {
             tu->connection->state = TU_DIAL_TONE;
+            notify(tu->connection);
         } else if(tu->state==TU_RINGING) {
             tu->connection->state = TU_DIAL_TONE;
+            notify(tu->connection);
         } else if(tu->state==TU_RING_BACK) {
             tu->connection->state = TU_ON_HOOK;
+            notify(tu->connection);
         }
-        notify(tu->connection);
         free(tu);
         pbx->threads++;
         V( &(pbx->mutex) );
