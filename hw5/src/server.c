@@ -24,6 +24,10 @@ void *pbx_client_service(void *arg) {
 
     // service loop
     FILE* read = fdopen(connfd, "r");
+    if(read==NULL) {
+        debug("fdopen error");
+        return NULL;
+    }
     while(1) {
         debug("service loop");
         char c;
